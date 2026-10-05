@@ -1,0 +1,33 @@
+# Local Python environments and build output
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+
+# Tool and notebook caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Recordings, derived arrays, and generated experiments
+/data/raw/
+/data/processed/
+/runs/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.pkl
+*.joblib
