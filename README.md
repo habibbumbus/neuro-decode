@@ -1,13 +1,40 @@
 # NeuroDecode
 
-An educational project to estimate two-dimensional cursor velocity from recorded
+A project to estimate two-dimensional cursor velocity from recorded
 motor-cortex spike activity. The planned comparison is ridge regression, a linear
 Gaussian Kalman decoder, and a small causal GRU, followed by recorded-data replay
 and controlled robustness experiments.
 
-**Status:** Phase 0 package and tooling setup only. No dataset has been acquired;
+**Status:** Project definition documentation and an existing Phase 0 package/tooling
+scaffold are present. No dataset has been acquired;
 no decoders, scientific results, or latency measurements exist yet. This is an
-independent project with no Neuralink affiliation or clinical claims.
+independent project that makes no clinical claims.
+
+## Experiment and evaluation plan
+
+In the original reaching experiment, a monkey moves its hand while a position
+tracker controls a cursor and implanted electrodes record motor-cortex spikes.
+These are intracortical recordings, not scalp EEG. NeuroDecode will learn from
+these paired recordings afterward: causal spike-count histories are decoder
+inputs, tracker-derived velocity supplies training and scoring labels, and the
+output is predicted x/y cursor velocity. Held-out movement labels will not be
+fed into the decoder.
+
+The planned evaluation uses chronological train/validation/test partitions,
+boundary gaps, and training-only preprocessing. Zero and training-mean baselines,
+ridge regression, a linear Gaussian Kalman decoder, and a small unidirectional
+GRU will be compared on the same eligible timestamps using velocity R² and RMSE.
+All models and scientific evaluation remain planned.
+
+A later visual replay will compare actual and decoded cursor trajectories,
+with decoded position obtained by integrating predicted velocity from a labeled
+known initial position. It will be labeled as offline replay of held-out neural
+recordings. Velocity scores will remain primary; playback speed will not be
+presented as inference latency. Recorded-data results will not establish live
+closed-loop control, human performance, or clinical usability.
+
+See the [project brief](docs/project_brief.md) for timing, evaluation, replay,
+and limitations, and [progress](docs/progress.md) for verified repository state.
 
 ## Setup
 
@@ -59,5 +86,6 @@ actually executed and pending work.
 
 Raw/processed recordings, environments, caches, and generated runs remain
 untracked. Small provenance files and curated results can be tracked. Dataset
-selection, attribution, licensing, timing, and evaluation protocols are pending
-the data audit. A license for this project's code has not been chosen.
+selection, attribution, licensing, and verification of schema/units are pending
+the data audit. Timing and evaluation choices are documented plans, not validated
+implementations. A license for this project's code has not been chosen.
