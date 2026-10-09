@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "neurodecode"
 version = "0.1.0"
-description = "Educational neural decoding from recorded motor-cortex spikes"
+description = "Cursor velocity decoding from recorded motor-cortex spikes"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = []

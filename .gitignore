@@ -9,6 +9,7 @@ __pycache__/
 # Tool and notebook caches
 .pytest_cache/
 .ruff_cache/
+.uv-cache/
 .mypy_cache/
 .ipynb_checkpoints/
 .coverage
