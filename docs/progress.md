@@ -211,3 +211,91 @@ After the understanding check and user Git checkpoint, the next increment is
 Phase 0C: review the existing tooling and reproducible setup checks, adding only
 what is useful and missing. CI, scientific dependency compatibility, source
 verification, data acquisition, and model implementation remain pending.
+
+## Phase 0C: development and setup checks — October 9, 2026
+
+### Verified state and retained implementation
+
+- Branch: `main`. Phase 0B progress is committed as `8285520`; setup changes
+  are committed as `98011df` (`init python package and environment`).
+- `main` and local `origin/main` both point to `98011df`, recording the
+  prior push. No new remote fetch/query was performed.
+- The index and tracked working files were clean on entry. The previously
+  observed untracked `%SystemDrive%/` Windows cache directory was preserved.
+- Read all current local guidance and progress. No applicable `AGENTS.md` or
+  decision log was present. The private guidance remains locally excluded and
+  untracked.
+- Existing Ruff configuration targets Python 3.11, uses an 88-character line
+  length, and enables `E4`, `E7`, `E9`, `F`, and `I` rules. The existing
+  lockfile selects Ruff 0.16.10 and pytest 9.1.1. No new dependency, configuration,
+  test, or scientific source code was needed.
+
+### Changes and checks executed
+
+Updated `README.md` with normal development commands, cache-free variants,
+check meanings, and an optional PowerShell temporary-environment verification.
+Appended this progress entry. Existing package/source/configuration and lockfile
+were retained. No CI, data download, model, CLI, or future scaffolding was added.
+
+Verification used Windows x64 build 26200, CPython 3.11.17, and uv 0.12.23:
+
+1. Created a new temporary directory with a separate `venv`. Set
+   `UV_PROJECT_ENVIRONMENT` only for the installation process. Attempted
+   `uv --cache-dir .uv-cache sync --locked --offline --python .venv/Scripts/python.exe`;
+   this could not install locked Ruff because its wheel was absent from the cache.
+2. Approved online execution of
+   `uv sync --locked --cache-dir .uv-cache --python .venv/Scripts/python.exe`
+   with the temporary environment selected succeeded, installing all eight
+   locked packages. No working-environment sync was performed.
+3. From a separate directory outside the checkout, ran the temporary
+   environment's Python with `-I -c` to import NeuroDecode and print interpreter,
+   module, and editable-install metadata. It passed: Python came from the temporary
+   environment, NeuroDecode came from `src/neurodecode/__init__.py`, and metadata
+   recorded an editable install. No manual `sys.path` or `PYTHONPATH` changes
+   were made.
+4. `uv --cache-dir .uv-cache --offline lock --check` passed.
+5. `uv --cache-dir .uv-cache --offline run --locked --no-sync ruff check --no-cache .`
+   passed with no lint findings.
+6. `uv --cache-dir .uv-cache --offline run --locked --no-sync ruff format --check --no-cache .`
+   passed with no formatting changes required.
+7. `uv --cache-dir .uv-cache --offline run --locked --no-sync pytest -p no:cacheprovider tests/test_package.py`
+   passed: one existing installation test, no warnings. Disabling test caching
+   avoids the runtime account's previously observed cache-write restriction.
+8. Git whitespace review passed. Lockfile, package/configuration, and test bytes
+   were unchanged. The index remains untouched.
+
+The unified shell tool failed before starting a command; local inspection and
+checks used the JavaScript runtime, with approved shell execution for the
+network-enabled temporary installation. Read-only Git inspection used a
+per-command repository-specific safe-directory setting, without persistent
+configuration changes. The temporary environment remains outside the repository
+for inspection; the existing project `.venv` was not reinstalled or replaced.
+
+### Meaning, limitations, and learning status
+
+The installation smoke test confirms basic package loading from outside the
+checkout. Ruff lint checks declared source rules; format checks style. Lock
+validation and temporary installation verify that this machine can construct a
+new environment using the current project metadata and selected dependencies.
+They do not establish scientific behavior, data integrity, decoding quality,
+full cross-platform reproducibility, or inference latency. A fresh clone and
+macOS/Linux installation were not tested; offline setup requires cached artifacts.
+
+Explained smoke testing, linting, formatting, and reproducible environment setup.
+Demonstrated the distinction between a basic import smoke test and static lint
+checks for issues such as unused imports and undefined names. Identified the
+outside-checkout check as supporting portability; clarified that its specific
+evidence is installed package discovery without relying on the current directory,
+not portability to another machine or OS. Existing pytest is retained for its
+installation test; no placeholder assertions or scientific tests were added.
+CI remains deferred until meaningful component behavior exists.
+
+Current README/progress changes are uncommitted. The last verified commit and
+recorded push remain `98011df` on `main` and local `origin/main`. The assistant
+performed no staging, commit, push, merge, or branch switch.
+
+After the understanding check and user Git checkpoint, the next increment is
+**Phase 1A: verify the dataset source and acquire one recording**. Resolve exact
+source/version, file, license/attribution, size, and checksum, then verify the
+acquired bytes and record provenance. No acquisition is authorized by this
+Phase 0C checkpoint.
