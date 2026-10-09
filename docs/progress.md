@@ -119,3 +119,95 @@ After the understanding check and user Git checkpoint, the next increment is a
 Phase 0B review of the existing minimal environment/package setup against the
 current plan. Verify what already works before adding anything; this entry does
 not authorize new installation or data acquisition.
+
+## Phase 0B: minimal package and environment — October 9, 2026
+
+### Repository state and scope
+
+- Actual branch: `main`, retained for direct checkpoint commits/pushes.
+- Phase 0A is present in committed history: `0081f72` records progress and
+  `3d9853e` adds the project overview/brief. Existing package/tooling was
+  committed earlier as `fb54cd3`.
+- `main` and local `origin/main` both point to `3d9853e`, recording the
+  prior push. No new remote query/fetch was performed.
+- Only an existing package-description edit in `pyproject.toml` was unstaged
+  on entry. That edit was preserved. The index was empty.
+- Read the local guidance and progress; no applicable `AGENTS.md` was found.
+  The private instruction file remains excluded locally and untracked.
+
+### Implemented versus retained
+
+The minimal package, Hatchling build configuration, Python 3.11 compatibility,
+`src/neurodecode/__init__.py`, `.python-version`, generated `uv.lock`, and
+project-local `.venv` already existed and were retained. Runtime dependencies
+remain empty. Existing pytest/Ruff development dependencies and the installation
+smoke test were preserved; no scientific dependencies or new tests were added.
+
+Updated `README.md` to explain the environment, package metadata, lockfile,
+source layout, editable installation, and working uv executable commands. Added
+`.uv-cache/` to shared `.gitignore` for the local verification cache. Existing
+exclusions cover environments, Python/tool caches, secrets, raw/processed
+recordings, runs, and model artifacts without excluding curated JSON/CSV/PNG.
+
+The existing lockfile was validated using uv and was not hand-edited or
+regenerated unnecessarily. Rebuilt the editable local package through
+`uv sync --locked --cache-dir .uv-cache`. No dataset, model, UI, future module,
+or CI was added.
+
+### Environment and verification
+
+Observed Windows NT build 26200, x64, and Windows PowerShell 5.1.26100.9549.
+The runtime account's launcher exposes Python 3.14 with pip 25.2; the project
+uses uv 0.12.23 and CPython 3.11.17 in `.venv`. An exact Windows edition query
+through CIM was denied; the kernel build and shell version were obtained by
+other read-only checks. Launcher inventory reflects this runtime account only.
+
+Checks executed:
+
+- `uv --version` confirmed 0.12.23. `py -m uv --version` failed because
+  the launcher-selected interpreter could not find that module; the executable
+  works and is now used in setup instructions.
+- `uv lock --check --offline --cache-dir .uv-cache` passed.
+- Initial offline sync failed because Hatchling was absent from this cache;
+  the restricted online attempt was blocked by socket permissions. Approved
+  execution then built and installed the local editable package successfully.
+- `uv sync --locked --offline --check --cache-dir .uv-cache` passed and
+  reported no environment changes needed after installation.
+- `uv run --locked --offline --cache-dir .uv-cache python -I -c "import sys, neurodecode; print(sys.version); print(sys.executable); print(neurodecode.__file__)"`
+  passed with the project environment's Python 3.11.17 and package source path.
+- Direct isolated import using that environment's Python from a temporary
+  directory passed; installed metadata confirmed an editable installation.
+- The existing `tests/test_package.py` check passed (one test). Pytest emitted
+  a cache-write permission warning under this runtime account; the import check
+  succeeded. No cache deletion or permission changes were made.
+- Git whitespace and exclusion checks passed; lockfile bytes were unchanged.
+- Final status also showed an untracked `%SystemDrive%/` directory containing
+  Windows cache database files. It was inspected without modification and is
+  outside the intended staging list.
+
+These checks establish local environment synchronization and package discovery,
+including outside the checkout without manual path manipulation. They do not
+establish data integrity, model correctness, scientific results, or latency.
+A fresh checkout/macOS/Linux installation was not tested. Lint, formatting,
+archive builds, and CI were not run/added during this increment.
+
+### Concepts, pending checks, and next increment
+
+Explained virtual environments, project/build metadata, dependency constraints
+versus locked versions, the source layout, and editable installation. Demonstrated
+that the project environment isolates dependencies and that an import check does
+not establish decoder correctness. Clarified that importing verifies package
+discovery/loading rather than every dependency behavior. After clarification,
+correctly identified pyproject.toml as the place to declare dependency
+requirements; uv.lock records exact resolved versions and is updated by uv.
+An independent explanation of source layout and editable installation remains
+pending; no broader packaging mastery is claimed.
+
+Current Phase 0B edits are uncommitted. No staging, commit, push, merge, or branch
+switch was performed by the assistant. The last verified relevant commit/push
+state remains `3d9853e` on `main` and local `origin/main`.
+
+After the understanding check and user Git checkpoint, the next increment is
+Phase 0C: review the existing tooling and reproducible setup checks, adding only
+what is useful and missing. CI, scientific dependency compatibility, source
+verification, data acquisition, and model implementation remain pending.
