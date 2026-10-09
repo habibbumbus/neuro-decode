@@ -1,68 +1,121 @@
-# Progress
+# Project status
 
-## Phase 0: package and tooling setup — October 4, 2026
+## Package and tooling setup — October 4, 2026
 
-Implementation and setup checks are complete. Understanding checkpoint and user
-commit are pending. No dataset, model, training, or performance measurement is
-present.
+The package and development environment are configured. No dataset has been
+acquired and no decoder, training pipeline, scientific result, or latency
+measurement is available yet.
 
-### Scope and decisions
+### Implemented
 
-- Create an installable `src/neurodecode` package with no work on import.
-- Target Python 3.11 only for now; broader version support is unverified.
-- Use uv and a generated lockfile as the project's dependency-resolution method.
-- Add pytest and Ruff now; defer scientific dependencies until needed.
-- Explicitly include package/project files in source distributions; restrict
-  wheels to the package.
-- Keep data, generated artifacts, secrets, and environments out of Git.
-- Defer CI until scientific components have meaningful synthetic-data tests.
-- Project code license is pending the author's choice.
-
-### Initial inspection
-
-- Repository root and origin match this project; branch is
-  `setup/project-skeleton`, based on initial commit `33184ad`.
-- Working tree and index were clean before setup edits; only README was tracked.
-- No applicable `AGENTS.md` files were found.
-- Local implementation brief is excluded through `.git/info/exclude` and is
-  untracked. Local exclusions must be re-established in another checkout.
-- Windows 11 Home, 64-bit; Intel Core i9-13900H, 14 cores / 20 logical processors;
-  31.6 GiB RAM. CPU is the planned benchmark device; no accelerator was assessed.
-- Existing Python installations: 3.12, 3.13, and 3.14. Python 3.11 and uv were
-  initially unavailable.
+- Installable `src/neurodecode` package with no work on import.
+- Python 3.11 compatibility target, selected by `.python-version`.
+- uv dependency management with generated `uv.lock` and an ignored `.venv`.
+- pytest installation smoke test and Ruff lint/format configuration.
+- Explicit source-distribution file selection and package-only wheel contents.
+- Git exclusions for environments, secrets, recordings, and generated artifacts;
+  provenance files and curated reports remain eligible for tracking.
 
 ### Verification
 
-Checks actually run on Windows:
+Verified on Windows 11 Home, 64-bit, Intel Core i9-13900H (14 cores / 20 logical
+processors), 31.6 GiB RAM, with CPython 3.11.17 and uv 0.12.23:
 
-- Installed uv 0.12.23 into the existing launcher Python's user packages and
-  installed uv-managed CPython 3.11.17. Existing Python versions were retained.
-- `py -m uv sync` generated `uv.lock` and created the ignored `.venv`.
-  A subsequent `py -m uv sync --locked` succeeded without changing the lockfile.
-- `py -m uv run --locked python --version`: Python 3.11.17.
-- Package import command printed `neurodecode`.
-- `py -m uv run --locked pytest`: one test passed. The test imports the installed
-  package in an isolated subprocess outside the checkout.
-- Ruff lint and format checks passed; resolved versions are pytest 9.1.1 and
-  Ruff 0.16.10, recorded with their dependencies in `uv.lock`.
-- `py -m uv build` produced a source archive and a wheel under ignored `dist/`.
-  Archive inspection confirmed the package is present and the local brief,
-  environments, secrets, recordings, and generated runs are absent.
-- Git exclusion checks confirmed the local brief is excluded and untracked;
-  environments, recording paths, runs, checkpoints, and `.env` are ignored.
-  A manifest JSON, curated PNG, and report CSV remain eligible for tracking.
-- `git diff --check` passed. No staging, commits, pushes, or merges were performed.
+- Locked environment sync and lockfile consistency checks passed.
+- Package import and one pytest smoke test passed. The test imports the installed
+  package in an isolated Python subprocess outside the checkout.
+- Ruff lint and format checks passed.
+- Source archive and wheel builds succeeded. Archive inspection confirmed package
+  files are present and local files, environments, recordings, and runs are absent.
+- Git whitespace and artifact-exclusion checks passed.
 
-These checks establish basic installation/tooling only. macOS/Linux commands are
-documented but have not been executed here. Scientific dependency compatibility,
-data integrity, causality, decoding performance, and inference latency are
-unverified. No installation or check was blocked.
+Resolved development dependencies include pytest 9.1.1 and Ruff 0.16.10.
+macOS/Linux setup instructions are documented but have not been executed here.
+Scientific dependency compatibility and decoding correctness remain unverified.
 
-### Learning checkpoint
+### Next milestone
 
-Understanding has not been assessed. Pending concepts: working tree versus index
-versus commit; local exclusions versus tracking; package/environment smoke checks
-versus scientific validation.
+Audit one public recording's source, licensing, checksums, schema, units, channel
+metadata, and timing before implementing data preparation. Dataset selection is
+provisional. Scientific dependencies and synthetic-data CI will be added with
+components that need them. Project code licensing is undecided.
 
-Next step after teach-back and user Git checkpoint: Phase 1 data-source audit,
-provenance, and one verified recording. Dataset selection remains provisional.
+## Phase 0A: project definition — October 9, 2026
+
+This entry supersedes the earlier next-milestone recommendation; the current
+next increment is the Phase 0B review described below.
+
+### Verified repository state
+
+- Actual branch at this checkpoint: `setup/project-skeleton`.
+- Last verified commit: `fb54cd3` (`initialize project tooling`), following
+  initial commit `33184ad`.
+- Origin is `https://github.com/habibbumbus/neuro-decode.git`. Local
+  `origin/main` points to `33184ad`; the current branch is one commit ahead
+  of that local reference and has no configured upstream. No fetch or remote
+  inspection was performed, so current server state and prior push status are
+  unverified.
+- On entry, `README.md`, this progress file, and `pyproject.toml` already
+  contained unstaged edits. The index was empty. Existing edits were preserved;
+  `pyproject.toml` was not changed by this checkpoint.
+- Tracked files confirm an existing package, lockfile, exclusions, and installation
+  smoke test. Setup checks listed in the October 4 entry are historical recorded
+  outcomes; they were not rerun today.
+- No applicable `AGENTS.md` was found. There was no project brief or decision
+  log. A separate decision log is not needed for this documentation slice.
+
+### Work and review
+
+Updated `README.md` with the experiment, planned evaluation, replay semantics,
+and current status while retaining setup instructions. Added
+[project_brief.md](project_brief.md) covering inputs, labels, velocity outputs,
+chronological evaluation, planned models, visual replay, and limitations.
+Appended this entry to preserve the earlier progress record.
+
+Reviewed all three documents for agreement about implemented versus planned
+work, held-out label use, timing, and replay claims. Inspected Git status,
+branches, remotes, tracked files, recent history, and staged/unstaged diffs.
+Verified the private local instruction file is untracked and excluded through
+Git's local exclude file. Documentation whitespace review passed.
+
+The shell tool could not start; local inspection used the JavaScript runtime.
+Git initially rejected the runtime account's ownership mismatch; read-only
+commands used a repository-specific, per-command safe-directory setting, with
+no persistent configuration changes.
+
+No dependencies were installed, data downloaded, models implemented, or tests
+added/run during this documentation checkpoint. Scientific correctness and
+current environment operability were not assessed. Documentation changes remain
+uncommitted; no staging, commit, push, merge, or branch switch was performed.
+
+### Concepts and understanding checks
+
+Explained the tracker-controlled original cursor, concurrent intracortical spike
+recordings, neural decoder inputs, tracker-derived labels, and velocity output.
+Illustrated average velocity with a 2 mm change over 20 ms giving 100 mm/s.
+Explained working tree, staging/index, local commit, and push to a remote.
+The brief documents why chronological splits and training-only preprocessing
+are planned and why visual replay must disclose integration and initialization.
+
+Understanding check update: demonstrated that only staged file changes enter a
+commit and that pushing publishes local committed history to the remote. After
+clarification, correctly identified tracker-derived velocity as the reference
+for held-out scoring rather than a decoder input.
+
+Explained held-out evaluation, spike-count features versus raw signals, velocity
+versus position, and label leakage versus overfitting. An independent explanation
+of precise decoder inputs/outputs and leakage versus overfitting remains pending.
+No broader mastery of Git, spike biology, array/schema handling, or model
+mathematics is claimed by this entry.
+
+### Decisions, open questions, and next increment
+
+Preserve the existing package/tooling work and complete the missing public
+project definition before scientific implementation. Keep current code licensing
+and exact dataset/session selection open. Provisional timing and split settings
+will need validation; no dataset-specific units or schema have been verified.
+
+After the understanding check and user Git checkpoint, the next increment is a
+Phase 0B review of the existing minimal environment/package setup against the
+current plan. Verify what already works before adding anything; this entry does
+not authorize new installation or data acquisition.
