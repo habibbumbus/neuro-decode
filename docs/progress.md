@@ -514,3 +514,107 @@ performed no staging, commit, push, merge, or branch switch.
 
 After the user understanding/Git checkpoint, the next increment is **Phase 1C:
 visualize a short segment of neural activity alongside recorded movement**.
+
+## Phase 1C: recorded spikes and cursor plots — October 10, 2026
+
+### Verified starting state
+
+Actual branch: `main`, at `f44b792` (`load and val neural recording data`).
+Local origin/main matches that commit, recording the previous push; no new
+fetch/remote query was performed. The tracked worktree and index were clean.
+Preserved the unrelated untracked Windows cache directory. Read the complete
+local guidance, progress, dataset card, manifest, loader, and existing tests.
+No applicable AGENTS.md was found. Private guidance and recordings remain
+excluded and untracked.
+
+Used the manifest's Indy recording from Zenodo 583331 v1. The plot script checks
+its SHA-256 before calling the existing loader. The loader interface and source
+file remain unchanged; there is no second parser. Added only Matplotlib via
+`uv add "matplotlib>=3.8,<4" --cache-dir .uv-cache` with approved network access.
+uv updated dependencies and the lockfile, selecting Matplotlib 3.11.2 and its
+required dependencies. No modeling stack was added.
+
+### Implementation and selection decisions
+
+- `src/neurodecode/plotting.py`: fixed early interval selection, shared time
+  conversion, labeled train selection, and three-panel recorded-data rendering.
+- `scripts/plot_recording.py`: manifest-driven generation command; verifies
+  bytes, writes PNG/JSON under ignored runs/, and refuses to overwrite artifacts.
+  Optional single folder name permits reruns without an elaborate CLI.
+- `tests/test_plotting.py`: nine synthetic selection/time-conversion cases.
+- `pyproject.toml` and generated `uv.lock`: plotting dependency.
+- Dataset card and README: command, rule, observations, interpretation, limits.
+- This progress entry: evidence and the next increment.
+
+The rule selects the earliest ten seconds in global neural/behavior overlap,
+starting on a behavior sample, and requires its end inside the provisional first
+70% of behavioral elapsed time. This is an exploratory guard, not generated or
+finalized evaluation splits. Selected interval: **[1288.0, 1298.0) s**, before
+provisional training end 1549.8 s. Only this early interval was presented; no
+future held-out portion was visualized for presentation selection.
+
+First four lexical channel identifiers and their first two unit slots yield
+M1 001–004 / U1–U2, independent of movement quality or apparent correlation.
+All eight rows remain, including two with zero events. U1 is residual unsorted
+activity; U2 is a sorted slot, not proof of a distinct stable neuron. Interval
+counts in row order: 59, 0, 43, 55, 48, 47, 18, 0 (270 total events).
+
+Both temporal panels subtract exactly the same 1288.0 s offset. The trajectory
+uses the identical 2,500 movement samples, with equal millimeter axis scaling.
+Start/end markers indicate first and last included samples; the last is
+1297.996 s, not the excluded endpoint. No spike binning, derived velocity,
+normalization, feature engineering, model fitting/prediction, signal shift,
+smoothing, or extra interpolated samples were introduced.
+
+Gap policy: reject any loader-defined behavioral gap intersecting the fixed
+interval; do not search for a replacement or bridge it. No gap is present here.
+Absence of spike events cannot distinguish silence from missing packets. The
+Phase 1B finger/cursor discrepancy remains unresolved; plots do not repair it.
+
+### Checks and actual outcomes
+
+```text
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/plot_recording.py
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/plot_recording.py phase1c-verified
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+```
+
+Initial rendering succeeded but reported a font-cache permission warning.
+The script now defaults that cache to ignored runs/.matplotlib/; rendering into
+a new folder succeeded without warnings, preserving the initial output. The
+final reviewed artifact is **runs/phase1c-verified/indy_20161005_06_recorded.png**
+with same-stem JSON. Both renders contain the same plotted pixels. Visual
+inspection confirmed readable train labels/empty-row annotations, matching time
+axes, physical units, equal trajectory scaling, and visible first/last markers.
+No pixel-perfect plot tests were added.
+
+All **29 tests passed**: 20 existing checks plus nine new synthetic cases for
+half-open bounds, common offsets, channel/unit mapping and empties, movement-
+independent selection, overlap-start snapping, gap refusal, provisional training
+limits, absent coverage, and invalid duration. Lint, format, lock consistency,
+Git whitespace/privacy/exclusion checks passed. Formatted only the three new
+Python files. Loader bytes were verified unchanged. PNG/JSON/cache outputs stay
+ignored; nothing is staged. No checks remain blocked or visually pending.
+
+Recorded x/y positions vary across the clip and events appear in multiple
+selected trains. This demonstrates a readable paired-data view, not causation,
+precise physiological alignment, or decoding performance. Underlying units remain
+source-documented as in Phase 1B. No data download or CI work was performed.
+
+### Learning checkpoint and next increment
+
+Explained spike rasters (ticks at event times, identified train rows), position
+versus time, and equal-scale x-y trajectories. Explained identity-based selection,
+a common display time origin, explicit empty rows, and the distinction between
+co-occurrence and model evidence. Understanding checks remain pending on these
+concepts; no mastery is inferred from a displayed figure.
+
+Implementation and verification are complete; changes remain uncommitted. The
+last verified commit/recorded push remains f44b792 on main/origin/main. The
+assistant performed no staging, commit, push, merge, or branch switch.
+
+The next increment will **establish chronological split boundaries and the causal
+timing contract before generating spike-count features or velocity targets**.

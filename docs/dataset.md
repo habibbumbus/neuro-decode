@@ -196,6 +196,76 @@ Together with the existing installation check, **20 tests passed**. The real
 recording passed loader validation separately; it is not a test fixture. Lint,
 formatting, and lockfile consistency checks passed.
 
+## Recorded-data exploration — Phase 1C, October 10, 2026
+
+From the repository root, generate the fixed exploratory figure with:
+
+```powershell
+uv run --locked python scripts/plot_recording.py
+```
+
+The script reuses `load_recording`, verifies the manifest SHA-256, and writes
+`runs/phase1c/indy_20161005_06_recorded.png` plus a JSON record of source identity,
+interval bounds, selection/gap rules, and train identities/event totals. These
+outputs and Matplotlib's cache under `runs/.matplotlib/` are ignored. Existing
+PNG/JSON files are not overwritten. To reproduce into a new named folder:
+
+```powershell
+uv run --locked python scripts/plot_recording.py phase1c-review
+```
+
+The already generated, visually reviewed final artifact is
+`runs/phase1c-verified/indy_20161005_06_recorded.png`. Its interval is fixed
+independently of movement quality:
+
+1. Find overlap between behavioral coverage and the global spike-event span.
+   Start at the first behavior timestamp at/after its start.
+2. Use the half-open ten-second interval **[1288.0, 1298.0) s** here. All panels
+   use exactly the same sample/event masks. Subtract 1288.0 s from both spike
+   and behavior times for display; no neural/behavior offset is introduced.
+3. Require the interval to end within the provisional first 70% of behavioral
+   elapsed time (end 1549.8 s here). This guard keeps presentation exploration
+   early; it does not create or finalize evaluation partitions. No later held-out
+   portion was visualized or selected for presentation.
+4. Choose the first four channel identifiers in lexical order and their first
+   two unit slots, regardless of activity or apparent movement correlation.
+   Here these are M1 001–004, U1 and U2. U1 is residual unsorted activity; U2 is
+   a sorted slot that may be empty. Rows are trains, not necessarily neurons.
+5. Refuse a behavioral gap intersecting the fixed interval, using the loader's
+   1.5 × median interval heuristic. Do not search for a replacement clip or
+   interpolate across gaps. No such gap occurs in this interval. Spike silence
+   does not identify missing packets; global event coverage alone cannot prove
+   uninterrupted neural acquisition.
+
+Read the panels as follows:
+
+- **Raster:** each tick marks an event in an identified train. Eight rows show
+  270 events in total; interval counts are 59, 0, 43, 55, 48, 47, 18, 0 in
+  channel/unit order. Both empty rows are retained and labeled "No events in
+  interval," which does not mean missing behavior samples.
+- **Position versus time:** blue x and orange y show 2,500 recorded position
+  samples in millimeters. Time is shared with the raster. Connected adjacent
+  samples are displayed without smoothing or added samples.
+- **x-y trajectory:** the same positions form a spatial path with equal axis
+  scaling. Green circle marks the first sample; red X marks the last included
+  sample at 1297.996 s, not the excluded endpoint 1298.0 s.
+
+Selected x positions range from about -50.364 to 52.199 mm, and y positions from
+29.046 to 104.817 mm. The cursor changes position across several portions of the
+clip, and events occur in multiple selected trains. These are descriptions of
+recorded data only. No signals were shifted until they looked aligned. The
+unresolved finger/cursor mapping discrepancy from Phase 1B remains unresolved.
+Temporal co-occurrence is not proof of causation, neural/behavior synchronization,
+or decoder accuracy. There are no model predictions, spike bins, derived velocity,
+normalization, or engineered features in this figure.
+
+Matplotlib 3.11.2 was added through uv with a generated lockfile update. Nine
+synthetic tests cover common half-open bounds, shared time offsets, identity
+mapping, empty trains, movement-independent selection, overlap start, gap refusal,
+and the provisional training guard. All 29 tests (new and existing) passed, with
+lint, format, and lockfile checks. Visual inspection confirmed legible labels,
+shared times, empty rows, equal trajectory scaling, and start/end markers.
+
 ## Reproduce acquisition and verification (Windows PowerShell)
 
 Run from the repository root. This downloads only the selected file when absent,
@@ -256,8 +326,8 @@ The first command should show shared ignore rules; the second should print
 nothing (exit code 1 means neither small file is ignored). The last must print
 nothing. Commit only the manifest/documentation, never recording bytes.
 
-Phase 1B adds raw-file inspection and a validated loader. Feature bins, velocity
-targets, evaluation splits, training, and visualization remain unimplemented.
+Phase 1C adds recorded-data plots using the validated loader. Feature bins,
+velocity targets, evaluation splits, and training remain unimplemented.
 The data come from recorded nonhuman-primate behavior; no human or live
-closed-loop performance claim follows. The next increment is **Phase 1C: visualize a short segment of neural activity
-alongside recorded movement**.
+closed-loop performance claim follows. The next increment will establish chronological split boundaries and the causal
+timing contract before spike-count features or velocity targets are generated.

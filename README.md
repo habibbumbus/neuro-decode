@@ -51,11 +51,24 @@ empty trains, and coverage differences. The loader preserves raw events and does
 not bin spikes, derive velocity, or prepare evaluation splits. Tests generate
 small synthetic HDF5 fixtures; real recordings remain outside tests and Git.
 
+## Plot an early recorded interval
+
+```powershell
+uv run --locked python scripts/plot_recording.py phase1c-review
+```
+
+This generates a spike raster, cursor positions versus time, and an x-y trajectory
+from a fixed early ten-second interval. Output PNG/JSON files stay under ignored
+`runs/phase1c-review/`. Choose a new folder name for another run; existing outputs
+are preserved. No predictions or signal shifts are used. See the
+[dataset card](docs/dataset.md) for selection rules, gap policy, and limitations.
+
 ## Setup
 
 Python 3.11 is the supported compatibility target for this checkpoint;
 compatibility with other Python versions has not been tested. Use uv 0.12.23.
-Runtime dependencies are NumPy and h5py for the MATLAB 7.3 recording loader.
+Runtime dependencies are NumPy/h5py for loading and Matplotlib for recorded-data
+figures.
 Existing pytest and Ruff development configuration is retained; model/training
 dependencies will be added only when needed.
 
