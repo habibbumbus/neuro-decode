@@ -330,6 +330,14 @@ Phase 1C adds recorded-data plots using the validated loader. Phase 2A defines
 chronological partition boundaries and a causal timing contract in
 [methods.md](methods.md), with a source-bound specification under data/splits/.
 The explored [1288, 1298) s interval remains inside retained training.
-Feature bins, velocity arrays, and training remain unimplemented. The data come
-from recorded nonhuman-primate behavior; no human or live closed-loop claim
-follows. The next increment is Phase 2B: causal spike-count bins.
+Phase 2B adds causal 20 ms channel counts using all five source unit slots,
+including residual unsorted U1. Raw slots remain preserved by the loader;
+aggregation occurs only in the binning module. All 96 M1 channels remain, with
+lexical identity order and no activity-based exclusion. Training output is
+[13079, 96], with 219,913 events conserved over included complete bins.
+Run uv run --locked python scripts/bin_recording.py; see [methods.md](methods.md)
+for exact grid/edge policies and the raw-timestamp example. Counts remain in
+memory; no processed cache is saved or reused. Velocity arrays, history windows,
+and training remain unimplemented. The data come from recorded nonhuman-primate
+behavior; no human or live closed-loop claim follows. Next: Phase 2C, derive
+cursor-velocity targets and align them with these bins.

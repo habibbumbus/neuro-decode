@@ -759,3 +759,140 @@ update is uncommitted. The assistant performed no staging, commit, push, merge,
 or branch switch.
 After the understanding and user Git checkpoint, the next increment is
 **Phase 2B: turn spike timestamps into causal spike-count bins using this contract**.
+
+## Phase 2B: causal spike-count bins — October 10, 2026
+
+### Verified starting state and contract
+
+Actual branch main at 96e40d0 (phase 2a), following 25ebf63 (split/timing
+implementation). Main and local origin/main match, recording the prior push;
+no new remote query/fetch was performed. Tracked files and the index were clean.
+The prior learning-status update is now committed. Preserved the unrelated
+untracked Windows cache directory. Read complete local guidance, progress,
+dataset card, methods, decisions, manifest, actual configuration/specification,
+loader and planner. No applicable AGENTS.md was found. Private guidance remains
+locally excluded and untracked; recordings and processed data remain ignored.
+
+Reused verified Indy session indy_20161005_06, Zenodo 583331 v1. The command
+checks source SHA-256, exact source identity, config UTF-8/LF fingerprint, and
+recomputed timestamp-only split metadata before counting. Source SHA-256 remains
+4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac.
+Config/split specification, raw data, loader/planner, dependencies and lockfile
+were retained without changes. No boundary proportions or timing settings changed.
+
+The official record's source description confirms that U1 contains residual
+unsorted threshold crossings left after sorting other units, not all events
+duplicated from those units. Direct browser retrieval timed out; the search-
+indexed official record provided the same documented role. This is source
+documentation, not independent proof of biological unit identity.
+
+### Implementation and policies
+
+- src/neurodecode/data/binning.py: BinnedSpikes and importable segment-grid/
+  partition counting logic with timestamp, coverage, identity, and gap guards.
+- scripts/bin_recording.py: verified training-only reproduction command,
+  independent per-channel event conservation, and a fixed early raw/count example.
+- tests/test_binning.py: 22 visibly synthetic cases; no real recording fixtures.
+- docs/methods.md: exact grid/edge, aggregation, gap, provenance, and cache policy.
+- README.md and docs/dataset.md: current status, output shape and reproduction.
+- This progress entry: actual evidence, concepts, pending checks, next increment.
+
+Grid origin is the saved 1288 s; width is 20 ms. Every edge is computed from
+origin plus an integer index times width, with shared adjacent edges and no
+cumulative addition. Count events in (start, end] using right-sided searches.
+There is no spike-time rounding/epsilon or boundary snapping.
+
+Construct complete bins separately inside retained partitions and valid segments,
+requiring start >= segment start and end < segment end. Drop partial edge bins
+and full bins ending at excluded endpoints. Machine endpoints remain authoritative,
+including their floating-point tails; marginal bins can be conservatively dropped.
+Return per-row partition/segment identity and segment edge-exclusion metadata.
+Known gaps/purges have no rows; valid zero-spike bins remain zero-valued rows.
+Refuse stale segments crossing >6 ms (+1 ns) behavioral gaps. Do not infer neural
+packet loss from silence. Warm-up count bins remain for later history formation;
+no model-ready history or scoring eligibility is claimed.
+
+Select all M1-prefixed channel identifiers in lexical order; if no M1 identifiers
+exist, retain all identifiers lexically with an explicit reported fallback.
+Aggregate every available unit slot once per channel, including residual
+unsorted U1 and empty slots, with zero-based slot mapping aligned to channel IDs.
+Keep quiet channels; no activity-based filtering or single-neuron claim.
+
+Counts stay in memory: no processed-array cache is saved or reused. Future cache
+persistence/identifier validation is deferred. No bulk arrays or recordings enter
+Git. The script prints source/config/split fingerprints and effective policy.
+
+### Actual training observations and checks
+
+Training output is int64 [13079, 96]: 13,079 complete 20 ms bins and 96 channel
+columns, M1 001–096. All five source slots are included per channel.
+There is one valid segment, head exclusion 0 s and tail exclusion approximately
+20 ms. First bin (1288.000, 1288.020]; last (1549.560, 1549.580].
+The bin ending at 1549.600 is excluded by the saved half-open ownership rule.
+
+First three training counts for M1 001 are 0, 2, 1. The second bin contains
+U1 event 1288.033454282609 s and U3 event 1288.0246070068824 s: count 2.
+The third contains U3 event 1288.0577023718893 s: count 1. Presentation uses the
+first ten bins/first three lexical channels, never a search for favorable activity.
+Independent masks over original event lists match the count sums for every
+selected channel, totaling 219,913 included training events. This is not a
+whole-recording count. Real validation/test counts/patterns were not inspected;
+partition behavior was verified with synthetic data.
+
+Commands actually run from the repository root:
+
+~~~text
+uv --version
+uv --cache-dir .uv-cache run --locked --no-sync python -c "import sys, numpy; print(sys.version); print(numpy.__version__)"
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_binning.py
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/bin_recording.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+git diff --check
+~~~
+
+Observed uv 0.12.23, Python 3.11.17, NumPy 2.4.6. No environment reinstall or
+dependency addition was needed. Formatted only the three new Python files.
+Focused initial tests passed; final full suite passed: 77 tests, including
+55 retained checks and 22 new binning cases. Lint, format, lock consistency,
+whitespace and exclusion reviews passed. The final training command passed
+again after the ownership guard/summary refinement. No computational check
+remains blocked. Git's existing LF-to-CRLF notices are normalization notices,
+not whitespace failures.
+
+Synthetic evidence covers hand counts/shared-edge ownership, duplicate list
+entries, empty trains and genuine zero rows, multi-unit aggregation, identity
+order/fallback, conservation over contiguous/disjoint intervals, future-event
+mutation, one-float-step future exclusion, drift-free grid construction, partial/
+excluded edges, gap omission/refusal, all partition boundaries, binless fragments,
+overlap rejection, and concrete invalid inputs. Actual recording evidence is
+separate: verified source/config/plan identity, training shape/intervals, original
+event example and per-channel conservation. Neither establishes physiological
+alignment, uninterrupted acquisition, decoding accuracy, or future target correctness.
+
+### Concepts, learning status, and next increment
+
+Explained irregular event timestamps versus counts, 20 ms width, right-closed
+event intervals, raw units versus channel aggregates, quiet versus invalid bins,
+edge omission, and retaining warm-up source counts. Hand example events
+[1.000, 1.010, 1.020, 1.025] yield 2 then 1 in adjacent 20 ms bins; the event
+on the shared edge belongs once to the earlier bin. Understanding update:
+correctly assigned a shared-edge event to the earlier bin and identified rows as
+20 ms intervals and columns as ordered recording channels. Correctly rejected
+zero counts as proof of missing data and recognized that movement may still occur.
+Clarified that zero means no recorded events in the included channel/unit slots
+for that bin, not absence of all motor-cortex activity or proof of uninterrupted
+acquisition. Independent explanation of that measurement limitation remains
+pending. Prior demonstrated timing/purge understanding and outstanding
+validation/test distinction remain as recorded in Phase 2A.
+
+No targets, normalization, smoothing, activity-based channel selection, history
+windows, models, data download, demo, or CI were added. Phase 2B implementation
+and verification are complete locally; changes remain uncommitted. Last verified
+commit/recorded push is 96e40d0 on main/local origin/main. No staging, commit,
+push, merge, or branch switch was performed by the assistant.
+
+After the understanding and user Git checkpoint, the next increment is
+**Phase 2C: derive cursor-velocity targets and align them with these bins**.

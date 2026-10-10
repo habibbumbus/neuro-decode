@@ -10,8 +10,9 @@ extrema are 1283.0023444054618–1666.9959174171197 s. Shared coverage is theref
 not an outage indicator. Physical synchronization and the finger/cursor
 discrepancy remain unresolved in [the dataset card](dataset.md).
 
-This checkpoint creates no count bins, velocity arrays, transforms, eligible
-feature indices, or model predictions.
+Phase 2A planned boundaries without count bins. Phase 2B now constructs causal
+channel counts as documented below; velocity arrays, transforms, eligible
+feature indices, and model predictions remain unimplemented.
 
 ## Timing contract
 
@@ -159,4 +160,132 @@ support, past-only selection, stale samples, gap resets, short timelines, and
 invalid settings. Real-file planning checks source identity and timing metadata
 separately. These checks do not establish biological lag, uninterrupted neural
 acquisition, decoding quality, or correct future feature/target construction.
-Eligible indices remain null. Next: Phase 2B causal spike-count bins.
+Eligible model-window/scoring indices remain null. The Phase 2B binning work
+and current next increment are documented below.
+
+## Causal spike-count construction — Phase 2B
+
+The implemented binning function is
+src/neurodecode/data/binning.py:bin_partition(recording, specification, config,
+partition="train"). It reuses the loader's raw event vectors and TimingConfig.
+It returns BinnedSpikes, with int64 counts [T, C], bin_start_s/bin_end_s [T],
+ordered channel_ids [C], source_channel_indices [C], included unit_indices [C],
+partition name, per-row segment_ids and integer grid_end_indices, and
+segment edge-exclusion metadata. Counts are events per bin, not events/second,
+normalized features, or single-neuron measurements.
+
+### Exact grid and edge policy
+
+Use the saved origin (1288 s here) and configured width (0.020 s). Compute each
+edge independently as origin + integer_index × width in float64. Bin k has
+start g(k−1) and end g(k), so adjacent bins share exactly the same stored edge.
+Never generate edges with cumulative addition or independently subtract the
+width from every end; those approaches can disagree at shared edges through
+floating-point rounding. Small float differences between end−start and 0.020
+are representation effects, not variable requested bin widths.
+
+Estimate a generous range of integer indices, then retain only candidates with
+start ≥ continuous-segment start and end < continuous-segment end. Compute bins
+separately within each saved segment/partition on the same global grid.
+Drop partial head/tail bins and any full bin ending exactly at the excluded
+segment endpoint. Do not shorten bins, snap boundaries, or introduce a local
+grid. This preserves Phase 2A's half-open ownership, including its authoritative
+machine endpoints. Strict comparison can conservatively drop a marginal bin.
+
+For each original unit vector, count:
+number of events ≤ end minus number of events ≤ start.
+Both searches use searchsorted(side="right"). Thus event inclusion is exactly
+(start, end]. No event after an end, even one float step later, is moved backward
+by an epsilon. There is no spike-time rounding or tolerance in event counting.
+Each source-list entry is counted once in its bin. Source duplicate entries
+remain separate entries; no within/across-unit deduplication is invented.
+
+Hand example: events [1.000, 1.010, 1.020, 1.025] give counts 2 in
+(1.000, 1.020] and 1 in (1.020, 1.040]. The shared-edge event 1.020 belongs to
+the earlier bin only. The first boundary event 1.000 is excluded from these bins.
+
+### Channels, units, gaps, and warm-up
+
+Select all identifiers beginning with the verified "M1 " prefix if any exist,
+and sort them lexically. Otherwise use all identifiers in lexical order and
+report that explicit fallback. Selection is identity-based, never based on
+full-recording activity, movement, correlation, or held-out performance.
+This session yields M1 001–096, preserving quiet and all-empty channels.
+
+Aggregate every available source slot once into its recording channel, including
+explicit empty slots. Python indices 0–4 correspond to source U1–U5 here.
+The [official dataset description](https://zenodo.org/records/583331) identifies
+U1 as residual unsorted threshold crossings left after sorting other units.
+It is not a copy of all sorted events. Preserve the included slot indices aligned
+with each channel ID; U1 plus U2–U5 form channel activity, not one identified neuron.
+No claim of stable neurons or cross-session unit identity is made.
+
+Validate disjoint ordered retained partitions, ordered nonoverlapping segments,
+declared coverage, and actual behavioral timestamp gaps against the fixed
+6 ms + 1 ns policy. Refuse a stale segment that crosses a detected gap rather
+than silently repairing it. Known invalid intervals and purge gaps have no
+rows. Genuine valid zero-spike bins do have rows with zeros. A fragment too
+short for a complete grid bin has an empty row range and exclusion metadata.
+Never infer neural packet loss from spike silence. There is no packet-quality
+mask in the currently verified schema; undiscovered acquisition gaps remain a
+limitation.
+
+Keep warm-up count bins: later eligible histories need their events. These count
+rows are not yet model-ready windows or scoring indices. History warm-up,
+behavioral sample-age checks, target alignment, and common eligibility remain
+separate later operations. No velocity arrays or histories are constructed here.
+
+### Reproduction, provenance, and cache policy
+
+From the repository root:
+
+~~~powershell
+uv run --locked python scripts/bin_recording.py
+~~~
+
+This command processes **training only**. It verifies recording SHA-256 and
+source/version/file identity against the manifest and saved specification,
+verifies the configuration's UTF-8/LF fingerprint, and recomputes timestamp-only
+split planning to check the saved contract before binning. It prints source,
+split (canonical-JSON SHA-256), configuration, grid, channel/slot policy, shape,
+segment exclusions, and a fixed early training example. Direct API callers must
+supply the verified source-bound specification; the script performs the full
+provenance checks.
+
+There is **no processed-array persistence or cache reuse** in Phase 2B. Every
+invocation reconstructs counts in memory from verified bytes. No bulk arrays are
+written to Git or disk. If persistence is added later, files must be under ignored
+data/processed/ and bind source checksum, split/configuration identity, effective
+binning policy, and complete channel/unit mapping before any cached reuse;
+that cache implementation is deferred.
+
+### Actual training output and verification
+
+Training counts have shape **[13079, 96]**: 13,079 chronological complete 20 ms
+bins and 96 recording-channel columns. There is one valid continuous segment.
+The first bin is (1288.000, 1288.020]; the last is
+(1549.560, 1549.580]. The head exclusion is 0 s; the tail exclusion is approximately
+0.020 s because a bin ending at 1549.600 would violate ownership.
+Warm-up bins remain present.
+
+For M1 001, the first three counts are 0, 2, 1. In its second bin,
+(1288.020, 1288.040], U1 contains event 1288.033454282609 s and U3 contains
+1288.0246070068824 s; U2/U4/U5 contribute zero. Their aggregate is 2.
+The following bin contains U3 event 1288.0577023718893 s, giving 1.
+This is a deterministic early example, not selection for apparent decoding quality.
+
+Independent boolean inclusion masks over the original unit lists matched count
+sums separately for every selected channel: **219,913 included training events**.
+This count covers only retained complete bins, not the entire raw recording.
+No real validation/test activity patterns or arrays were inspected.
+
+Twenty-two new synthetic cases verify hand counts, exact/shared edges, duplicate
+list entries, empty trains, zero rows, multiple units, deterministic channel
+ordering and fallback, independent conservation (including disjoint segments),
+causality under future-event mutation, one-float-step future events, integer-grid
+construction, incomplete/excluded edges, gaps, ownership, and invalid inputs.
+All 77 tests, including 55 retained checks, passed; lint and formatting passed.
+These checks establish count extraction and tested boundary behavior, not
+physiological alignment, neural continuity, decoding performance, or velocity
+target correctness. Next: Phase 2C, derive cursor-velocity targets and align
+them with these bins.
