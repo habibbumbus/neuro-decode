@@ -8,7 +8,9 @@ and controlled robustness experiments.
 **Status:** Project definition and minimal packaging are committed. Phase 0C
 development checks and temporary-environment installation passed on Windows.
 One Indy recording from Zenodo v1 has been acquired and checksum-verified;
-the raw schema and minimal loader are validated. No decoders, scientific results,
+the raw schema and minimal loader are validated. An early recorded-data figure
+and a source-bound chronological split/timing plan are available. Count bins and
+velocity targets remain unimplemented. No decoders, scientific results,
 or latency measurements exist yet. This is an independent project that makes no clinical
 claims.
 
@@ -62,6 +64,18 @@ from a fixed early ten-second interval. Output PNG/JSON files stay under ignored
 `runs/phase1c-review/`. Choose a new folder name for another run; existing outputs
 are preserved. No predictions or signal shifts are used. See the
 [dataset card](docs/dataset.md) for selection rules, gap policy, and limitations.
+
+## Plan chronological partitions
+
+```powershell
+uv run --locked python scripts/plan_splits.py
+```
+
+The command verifies recording bytes and saves a small reproducible specification
+under data/splits/. See [methods](docs/methods.md) for the 20 ms timing contract,
+70/15/15 elapsed-time split, purge gaps, warm-up, and endpoint rules. It uses
+timestamp/coverage metadata, not held-out movement patterns. Exact eligible
+feature indices remain pending; no bins or velocity arrays are generated.
 
 ## Setup
 
@@ -224,5 +238,6 @@ untracked. Small provenance files and curated results can be tracked. Dataset
 source/version, attribution, license, and verified hashes are documented in the
 [dataset card](docs/dataset.md) and [manifest](data/manifest.json). Internal schema,
 units, timing, coverage differences, and unresolved alignment details are
-documented in the dataset card. Feature preparation and evaluation choices
-remain plans. A license for this project's code has not been chosen.
+documented in the dataset card. Chronological partitions and timing are specified in
+[methods](docs/methods.md); feature/target construction and model evaluation
+remain unimplemented. A license for this project's code has not been chosen.

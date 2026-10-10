@@ -326,8 +326,10 @@ The first command should show shared ignore rules; the second should print
 nothing (exit code 1 means neither small file is ignored). The last must print
 nothing. Commit only the manifest/documentation, never recording bytes.
 
-Phase 1C adds recorded-data plots using the validated loader. Feature bins,
-velocity targets, evaluation splits, and training remain unimplemented.
-The data come from recorded nonhuman-primate behavior; no human or live
-closed-loop performance claim follows. The next increment will establish chronological split boundaries and the causal
-timing contract before spike-count features or velocity targets are generated.
+Phase 1C adds recorded-data plots using the validated loader. Phase 2A defines
+chronological partition boundaries and a causal timing contract in
+[methods.md](methods.md), with a source-bound specification under data/splits/.
+The explored [1288, 1298) s interval remains inside retained training.
+Feature bins, velocity arrays, and training remain unimplemented. The data come
+from recorded nonhuman-primate behavior; no human or live closed-loop claim
+follows. The next increment is Phase 2B: causal spike-count bins.

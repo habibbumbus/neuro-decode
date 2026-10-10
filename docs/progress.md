@@ -622,3 +622,130 @@ assistant performed no staging, commit, push, merge, or branch switch.
 
 The next increment will **establish chronological split boundaries and the causal
 timing contract before generating spike-count features or velocity targets**.
+
+## Phase 2A: chronological splits and causal timing — October 10, 2026
+
+### Verified starting state
+
+Branch main at ead8c2c (phase 1c), following 2fa20b6 (visualization implementation).
+Local origin/main matches ead8c2c, recording the prior push; no new remote
+query/fetch was performed. Phase 1C is present in main's history, not assumed
+merged from another branch. Tracked files and the index were clean on entry.
+The unrelated untracked Windows cache directory was preserved. Read complete
+local guidance, progress, dataset card, manifest, loader, plotting code, scripts,
+and existing tests. No applicable AGENTS.md was found. Private guidance remains
+locally excluded and untracked; raw recordings remain ignored and untracked.
+
+Reused manifest-selected indy_20161005_06.mat, Zenodo 583331 v1. SHA-256 still
+matches 4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac;
+actual size remains 83,957,398 bytes. Loader timing audit confirms 93,501 behavior
+samples spanning 1288–1662 s, approximately 4 ms intervals, and no detected gaps.
+Global neural coverage extends beyond behavior on both sides. No waveform
+payloads, held-out movement patterns, or correlations were examined to choose
+boundaries. Existing loader/visualization source and interfaces were retained.
+
+### Implemented and decisions
+
+- configs/base.toml: 20 ms bins, ten-bin history, no additional lag/horizon,
+  fixed 6 ms behavioral sample-age/gap limits, elapsed-time fractions, and the
+  previously explored interval ledger.
+- src/neurodecode/splits.py: validated timing configuration, half-open interval
+  ownership, conservative support calculations, past-only behavioral timestamp
+  selection, chronological planning, gap segmentation, purge and warm-up metadata.
+  It does not read position values, bin events, or calculate velocity.
+- scripts/plan_splits.py: verifies acquired SHA-256, reuses the loader, checks
+  exploration/training ownership, saves source-bound specification, prints summary,
+  and refuses to replace an existing different specification.
+- data/splits/indy_20161005_06.json: generated small trackable split specification,
+  recording source/version/checksum and config fingerprint, grid, bounds,
+  endpoint conventions, purge/gap/reset rules, and null eligible feature indices.
+- tests/test_splits.py: 26 synthetic timestamp/config/support cases.
+- docs/methods.md: timing, label definition, exact sample-time example, rationale,
+  endpoint/gap/state rules, reproducible commands, and limitations.
+- docs/decisions.md: substantive timing/evaluation policy choices.
+- README.md and docs/dataset.md: accurate status and links to the split contract.
+- This entry: verified results, pending learning checks, and next increment.
+
+Nominal 70/15/15 applies to elapsed overlap time, including any gaps:
+[1288, 1549.8), [1549.8, 1605.9), [1605.9, 1662).
+The conservative lookback is max(200 ms neural history, 26 ms target-source
+lookback plus 1 ns age tolerance) = 200 ms. Purge 200 ms on each side of each
+boundary. Retained intervals, rounded for display:
+training [1288, 1549.6), validation [1550, 1605.7), test [1606.1, 1662).
+Retained durations: 261.6 / 55.7 / 55.9 s; purge discard 0.8 s total; additional
+detected-gap discard 0 s. Machine endpoints in JSON are authoritative.
+
+Full warm-up is separately required inside each retained continuous segment:
+200 ms here. Purge time belongs to no partition; warm-up time supplies local
+history. All source support and actual selected samples must belong to the same
+partition and segment. Future model state resets at session/partition/gap starts.
+No held-out movement may initialize a decoder. Fixed >6 ms behavioral intervals
+(+1 ns comparison tolerance) split continuity; never bridge or repair gaps.
+The tolerance does not permit future sample selection or expanded ownership.
+Short fragments cannot form full windows; insufficient partitions fail.
+Global spike silence does not identify neural acquisition outages.
+
+Phase 1C artifact metadata confirms explored interval [1288, 1298) and the same
+source SHA-256. It is entirely inside retained training: no conflict.
+For a possible emission at 1288.200 s, features cover (1288.000, 1288.200];
+actual selected position-source timestamps are 1288.180 and 1288.200 s
+(indices 45 and 50). The future completed-bin label uses their displacement
+divided by 0.020 s; no target value was calculated. This is not forecasting.
+
+### Commands and outcomes
+
+Commands actually run from the repository root:
+
+~~~text
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/inspect_recording.py data/raw/indy_20161005_06.mat
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/plan_splits.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+git diff --check
+~~~
+
+The summary and generated specification agree. An identical generation rerun
+succeeded. An additional one-off project-Python check used prediction_support
+and select_behavior_samples at 1288.200 s; it printed the support bounds and
+actual indices/timestamps reported above without reading position values.
+
+All 55 tests passed: 29 retained checks and 26 new synthetic cases. Coverage
+includes ordering/disjointness, time proportions, half-open endpoints, support
+bounds and age tolerance, past-only selection, stale/cross-boundary refusal,
+gap segmentation/reset warm-up, absent/disjoint neural coverage, impossible
+settings, and insufficient continuous recording length. These are synthetic
+test results, distinct from the real recording's timing observations.
+
+Initial lint found two import-order issues in new files; fixed those only.
+Ruff formatted only the three new Python files; final lint and format passed.
+Lock consistency and whitespace review passed. Git emitted its existing
+LF-to-CRLF normalization notice, not a whitespace failure. Config hashing
+normalizes text to LF for portability; raw recording hashing uses exact bytes.
+Privacy/raw/processed/runs exclusion checks passed; config, split JSON and public
+docs remain trackable. No checks remain blocked. The local environment was not
+reinstalled; no dependency or lockfile changes were needed.
+
+These checks establish planning/support behavior for tested synthetic timelines,
+and source identity/recording metadata for this file. They do not establish
+decoding accuracy, physiological lag, perfect acquisition, future bin/target
+correctness, or final eligible example counts. Exact grid eligibility remains
+pending construction. No scientific transforms, models, data download, CI,
+or demo were added.
+
+### Concepts, pending understanding, and next increment
+
+Discussed chronological splitting, leakage from shared support or learned
+preprocessing, neural history windows, past-or-present behavioral sample selection,
+completed-interval estimation versus forecasting, purge versus local warm-up,
+and state resets. Independent understanding checks for source timestamps,
+purge/warm-up, and cross-partition history remain pending this checkpoint.
+Earlier schema and plotting learning status remains as recorded above; no
+new mastery is inferred from passing software checks.
+
+Phase 2A implementation/verification is complete locally, with changes
+uncommitted. Last verified commit/recorded push is ead8c2c on main/origin/main.
+The assistant performed no staging, commit, push, merge, or branch switch.
+After the understanding and user Git checkpoint, the next increment is
+**Phase 2B: turn spike timestamps into causal spike-count bins using this contract**.

@@ -1,0 +1,19 @@
+# Phase 2A timing and chronological split policy; no model settings yet.
+[timing]
+bin_ms = 20
+history_bins = 10
+additional_lag_ms = 0
+forecast_horizon_ms = 0
+max_behavior_age_ms = 6
+behavior_gap_ms = 6
+
+[split]
+train_fraction = 0.70
+validation_fraction = 0.15
+test_fraction = 0.15
+
+# Reviewed Phase 1C interval, retained as an exploration ledger.
+[exploration]
+session = "indy_20161005_06"
+start_s = 1288.0
+end_s = 1298.0

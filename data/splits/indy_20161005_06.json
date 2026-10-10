@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "timing": {
+    "bin_ms": 20,
+    "history_bins": 10,
+    "additional_lag_ms": 0,
+    "forecast_horizon_ms": 0,
+    "max_behavior_age_ms": 6,
+    "behavior_gap_ms": 6
+  },
+  "age_gap_comparison_tolerance_s": 1e-09,
+  "fractions": {
+    "train": 0.7,
+    "validation": 0.15,
+    "test": 0.15
+  },
+  "proportion_basis": "elapsed global neural/behavior overlap; gaps do not move boundaries",
+  "overlap": {
+    "start_s": 1288.0,
+    "end_s": 1662.0
+  },
+  "bin_grid": {
+    "origin_s": 1288.0,
+    "width_s": 0.02,
+    "end_rule": "origin + k * width, integer k >= 1"
+  },
+  "endpoint_convention": "Partitions/segments [start, end); spike bins (start, end]; terminal overlap endpoint excluded",
+  "purge_per_side_s": 0.2,
+  "purge_derivation": "max(history_bins * bin_s, bin_s + max_behavior_age_s + age_tolerance_s) on EACH side of each nominal boundary",
+  "purge_intervals_s": [
+    [
+      1549.6,
+      1550.0
+    ],
+    [
+      1605.7,
+      1606.1000000000001
+    ]
+  ],
+  "behavior_gaps_s": [],
+  "gap_policy": "Intervals > fixed behavior_gap_ms + 1 ns split segments; exclude [last_before, first_after), no bridging or repair",
+  "reset_policy": "Reset history and future recurrent/Kalman state at session, partition, and segment starts; no held-out behavioral initialization",
+  "support_rule": "All spike events and selected behavioral samples inside same retained partition and continuous segment; full conservative support envelope required",
+  "behavior_selection": "Latest stored timestamp <= each boundary via searchsorted(side=right)-1; age <= max_behavior_age_ms + 1 ns; no future sample tolerance",
+  "warmup_s": 0.2,
+  "prediction_availability": "At or after bin end plus actual computation delay; completed-interval velocity estimation, not forecasting",
+  "eligible_feature_indices": null,
+  "eligibility_status": "Pending binning/target construction and actual source-support checks; segment warm-up bounds are not feature indices",
+  "partitions": [
+    {
+      "name": "train",
+      "nominal": {
+        "start_s": 1288.0,
+        "end_s": 1549.8
+      },
+      "retained": {
+        "start_s": 1288.0,
+        "end_s": 1549.6
+      },
+      "nominal_duration_s": 261.79999999999995,
+      "purge_discarded_s": 0.20000000000004547,
+      "gap_discarded_inside_retained_s": 0.0,
+      "continuous_segments": [
+        {
+          "start_s": 1288.0,
+          "end_s": 1549.6,
+          "warmup_s": 0.2,
+          "earliest_support_complete_end_s": 1288.2,
+          "has_room_for_grid_window": true
+        }
+      ]
+    },
+    {
+      "name": "validation",
+      "nominal": {
+        "start_s": 1549.8,
+        "end_s": 1605.9
+      },
+      "retained": {
+        "start_s": 1550.0,
+        "end_s": 1605.7
+      },
+      "nominal_duration_s": 56.100000000000136,
+      "purge_discarded_s": 0.40000000000009095,
+      "gap_discarded_inside_retained_s": 0.0,
+      "continuous_segments": [
+        {
+          "start_s": 1550.0,
+          "end_s": 1605.7,
+          "warmup_s": 0.2,
+          "earliest_support_complete_end_s": 1550.2,
+          "has_room_for_grid_window": true
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "nominal": {
+        "start_s": 1605.9,
+        "end_s": 1662.0
+      },
+      "retained": {
+        "start_s": 1606.1000000000001,
+        "end_s": 1662.0
+      },
+      "nominal_duration_s": 56.09999999999991,
+      "purge_discarded_s": 0.20000000000004547,
+      "gap_discarded_inside_retained_s": 0.0,
+      "continuous_segments": [
+        {
+          "start_s": 1606.1000000000001,
+          "end_s": 1662.0,
+          "warmup_s": 0.2,
+          "earliest_support_complete_end_s": 1606.3000000000002,
+          "has_room_for_grid_window": true
+        }
+      ]
+    }
+  ],
+  "source": {
+    "record_id": 583331,
+    "version": "v1",
+    "record_url": "https://zenodo.org/records/583331",
+    "session": "indy_20161005_06",
+    "filename": "indy_20161005_06.mat",
+    "sha256": "4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac",
+    "actual_size_bytes": 83957398
+  },
+  "configuration": {
+    "path": "configs/base.toml",
+    "sha256": "2ca6b9a7a83b9fa12bf206aca2521cea60cd8903ed50f77e008b7db87c3c59f1",
+    "hash_encoding": "UTF-8 text with LF newlines"
+  },
+  "quality_metadata": {
+    "behavior_range_s": [
+      1288.0,
+      1662.0
+    ],
+    "sample_interval_s": {
+      "min": 0.0039999999999054126,
+      "median": 0.0039999999999054126,
+      "mean": 0.004,
+      "max": 0.004000000000132786,
+      "std": 1.1207100615686515e-13
+    },
+    "spike_range_s": [
+      1283.0023444054618,
+      1666.9959174171197
+    ],
+    "gap_after_sample_indices": []
+  },
+  "prior_exploration": {
+    "session": "indy_20161005_06",
+    "start_s": 1288.0,
+    "end_s": 1298.0,
+    "belongs_to_training": true,
+    "evidence": "docs/progress.md Phase 1C; reviewed PNG/JSON in runs/phase1c-verified"
+  }
+}
