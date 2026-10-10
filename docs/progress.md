@@ -609,8 +609,12 @@ source-documented as in Phase 1B. No data download or CI work was performed.
 Explained spike rasters (ticks at event times, identified train rows), position
 versus time, and equal-scale x-y trajectories. Explained identity-based selection,
 a common display time origin, explicit empty rows, and the distinction between
-co-occurrence and model evidence. Understanding checks remain pending on these
-concepts; no mastery is inferred from a displayed figure.
+co-occurrence and model evidence. Correctly identified raster ticks as spike
+events and the figure as recorded activity/movement rather than decoder evidence.
+After clarification, correctly explained that a shared time-origin subtraction
+changes displayed timestamps while preserving relative timing. Independent
+explanations of identity-based selection and equal spatial scaling remain pending;
+no broader plotting or neuroscience mastery is claimed.
 
 Implementation and verification are complete; changes remain uncommitted. The
 last verified commit/recorded push remains f44b792 on main/origin/main. The
