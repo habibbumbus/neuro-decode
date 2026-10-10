@@ -739,13 +739,23 @@ or demo were added.
 Discussed chronological splitting, leakage from shared support or learned
 preprocessing, neural history windows, past-or-present behavioral sample selection,
 completed-interval estimation versus forecasting, purge versus local warm-up,
-and state resets. Independent understanding checks for source timestamps,
-purge/warm-up, and cross-partition history remain pending this checkpoint.
+and state resets. Understanding update: correctly distinguished permanently
+excluded purge time from within-partition warm-up history. After clarification,
+correctly selected a 4 ms-old behavioral sample over a future sample; the same
+partition/segment requirement was also explained. Identified the need to keep
+training and validation separate. Clarified that validation selects model
+settings and the final test evaluates frozen choices. An independent explanation
+of that distinction and why borrowing training history violates validation
+support remains pending. No broader timing or evaluation mastery is claimed.
 Earlier schema and plotting learning status remains as recorded above; no
 new mastery is inferred from passing software checks.
 
-Phase 2A implementation/verification is complete locally, with changes
-uncommitted. Last verified commit/recorded push is ead8c2c on main/origin/main.
-The assistant performed no staging, commit, push, merge, or branch switch.
+Phase 2A implementation/verification is complete and committed as 25ebf63
+(define chronological splits, timing rules). Main and local origin/main match
+that commit, recording the prior push; no new remote query/fetch was performed.
+Tracked files and the index were clean before this learning-status update;
+the unrelated untracked Windows cache directory was preserved. This progress
+update is uncommitted. The assistant performed no staging, commit, push, merge,
+or branch switch.
 After the understanding and user Git checkpoint, the next increment is
 **Phase 2B: turn spike timestamps into causal spike-count bins using this contract**.
