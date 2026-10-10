@@ -11,8 +11,8 @@ Selected **indy_20161005_06.mat** from the explicitly requested
 [Zenodo record 583331](https://zenodo.org/records/583331), **v1**, published
 May 26, 2017. The record page offers newer versions; this acquisition retained v1.
 The API has no explicit version string, so the v1 label comes from the record page.
-The file is available and manageable in size. Actual modeling suitability is
-pending internal inspection.
+The file has been acquired and its raw schema validated in Phase 1B.
+Downstream modeling suitability remains unverified.
 
 ## Provenance, license, and citation
 
@@ -63,10 +63,138 @@ recording channels, and u is unit entries.
 The first spike-unit entry contains residual unsorted threshold crossings, not
 a duplicate of all sorted units. The source also lists waveform snippets; they
 are not needed for this acquisition or the planned timestamp-based decoder.
-The actual storage representation, dimensions, channel count/regions, unit count,
-duration, timestamp origins, sampling coverage, missingness, gaps, and alignment
-are all **pending Phase 1B inspection**. Do not infer a particular session's
-channel count from the source's general description or silently transpose arrays.
+The verified storage layout, counts, timing, and remaining alignment uncertainties
+are documented below. Do not infer a particular session's channel count from the
+source's general description or silently transpose arrays.
+
+## Verified file structure and loader — Phase 1B, October 10, 2026
+
+The original bytes still match the manifest's SHA-256. The header identifies
+MATLAB 7.3, and h5py confirms HDF5. Top-level keys are `#refs#`, `chan_names`,
+`cursor_pos`, `finger_pos`, `spikes`, `t`, `target_pos`, and `wf`.
+Only metadata was inspected for `wf`; waveform payloads are not loaded.
+
+| Field | Stored HDF5 shape/type | Returned representation |
+| --- | --- | --- |
+| t | (1, 93501), float64, MATLAB double | behavior_times_s: (93501,), seconds |
+| cursor_pos | (2, 93501), float64, MATLAB double | cursor_position_mm: (93501, 2), x/y millimeters |
+| chan_names | (1, 96), MATLAB cell/object references | channel_ids: tuple of 96 strings in source order |
+| spikes | (5, 96), MATLAB cell/object references | spike_times_s[channel_index][unit_index], variable-length event arrays in seconds |
+| finger_pos | (3, 93501), float64 | inspected for source-mapping consistency only; not returned |
+| target_pos | (2, 93501), float64 | metadata only; not returned |
+| wf | (5, 96), references | metadata only; not returned |
+
+Each channel-name reference points to a (6, 1) uint16 MATLAB char dataset. The
+loader decodes UTF-16 code units. Each spike-cell reference points either to a
+(1, event_count) double vector or to a MATLAB-encoded empty array. The 231 empty
+trains use a (2,) uint64 dimension vector [0, 0] with `MATLAB_empty=1`; these
+zeros are not spike timestamps. A null reference is missing/unsupported data,
+not interchangeable with this explicit empty encoding.
+
+MATLAB cells can hold different-length vectors. HDF5 references point to these
+individual objects, so reading the cell table alone does not read spike values.
+See [h5py reference documentation](https://docs.h5py.org/en/stable/refs.html).
+
+Dimension reordering is deliberate: the source defines positions as samples × 2,
+and the stored array is 2 × samples with the same sample count as `t`. Thus only
+`cursor_pos` is transposed to return [T, 2]. The 96 channel-name entries establish
+that the second stored spike axis is channels; cell [unit, channel] maps to
+returned [channel][unit]. The loader accepts this observed layout only rather
+than guessing orientations for arbitrary MAT files.
+
+### Timing, identities, and event observations
+
+- Behavioral sample count: **93,501**; range **1288.0–1662.0 seconds**;
+  elapsed span **374.0 seconds**. The original nonzero time origin is retained.
+- Sampling intervals: min 0.0039999999999054126 s, median
+  0.0039999999999054126 s, mean 0.004 s, max 0.004000000000132786 s,
+  standard deviation 1.1207100615686515e-13 s. This agrees with the source's
+  documented 250 Hz sampling to floating-point precision.
+- No nonfinite behavioral times/positions, duplicate behavior timestamps, or
+  decreasing behavior times. No intervals exceed 1.5 × the observed median
+  (approximately 6 ms). This is a gap-reporting heuristic, not proof of perfect
+  acquisition or a future data-quality exclusion rule.
+- Channels: **M1 001 through M1 096**, exactly in that order, unique. Names
+  identify recording channels; they do not establish stable individual neurons.
+- Five unit slots per channel: Python indices 0–4 correspond to MATLAB units 1–5.
+  Index 0 is source-documented residual unsorted activity. Sorted slots are not
+  aggregated and are not asserted to persist across sessions.
+- Total events **323,237**. Slot totals, in source order:
+  **128,756; 84,879; 81,701; 23,654; 4,247**. These are audit totals, not binned
+  model features. Empty trains per slot: **11, 26, 36, 71, 87** (231 total).
+- Eleven all-empty channels are preserved: M1 009, 047, 055, 058, 061, 068, 071,
+  078, 079, 082, 096. Channel totals range from 0 to 12,622 events.
+- No nonfinite spike values, descending spike times, or within-train duplicate
+  timestamps were observed. The loader permits and explicitly reports duplicate
+  spike events in other inputs without dropping them.
+- Spike coverage: **1283.0023444054618–1666.9959174171197 seconds**, a span of
+  about 383.994 s. **5,454** events precede the first behavior sample and **5,364**
+  follow the last. All are retained. Future alignment must choose shared coverage
+  explicitly; the loader does not truncate or zero timestamps.
+
+### Units and unresolved issues
+
+Seconds for timestamps/events and millimeters for cursor coordinates come from
+source documentation. Relevant HDF5 datasets carry MATLAB class attributes but
+no explicit unit attributes. Numerical magnitude alone cannot establish units.
+The observed behavioral intervals agree with documented sampling, but do not
+independently calibrate physical positions or prove neural/behavior synchronization.
+
+As an optional consistency check, comparing cursor positions with the source's
+simple `-10 * finger_pos[1:3]` transform gave a maximum absolute difference of
+**3.038030960232419 mm**. Per-axis difference standard deviations were about
+0.361502 and 0.299662 mm. The difference is not a fixed translation. Its cause
+(e.g. processing or timing differences) is unresolved, not inferred. The loader
+returns stored `cursor_pos` unchanged rather than reconstructing it from fingers.
+The relationship warrants later inspection if used; no coordinate repair was made.
+
+Empty cells encode absence of events, but the file alone does not explain why a
+channel/slot is empty. A unit slot is not proof of a detected neuron. Exact
+hardware synchronization, biological lag, calibration, and downstream usefulness
+remain unverified even though this raw schema validates.
+
+### Returned structure and reproduction
+
+`load_recording(path)` returns a `Recording` with behavior timestamps,
+positions, channel identifiers, nested spike vectors, and timing/coverage
+`diagnostics`. For example, actual loaded values are:
+
+```text
+behavior_times_s[:3] = [1288.0, 1288.004, 1288.008]
+cursor_position_mm[0] ≈ [-7.566217, 30.195105]
+channel_ids[0] = "M1 001"
+spike_times_s[0][0][:3] ≈ [1285.477042, 1285.519067, 1285.548762]
+```
+
+The first listed spikes precede behavior coverage. They are event times, not
+three measurements paired row-by-row with the three position samples.
+Full channel/unit counts are available as
+`recording.diagnostics["spike_counts_by_channel_unit"]`.
+
+From the repository root, after normal uv setup:
+
+```powershell
+uv sync --locked
+uv run --locked python scripts/inspect_recording.py data/raw/indy_20161005_06.mat
+uv run --locked pytest
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+```
+
+The summary script loads one file and prints observations; it is not a general
+CLI or preprocessing pipeline. NumPy and h5py are the only new dependencies.
+The loader fails on unsupported formats/layouts, missing/broken references,
+nonfinite values, mismatched dimensions/channel counts, duplicate/decreasing
+behavior timestamps, and decreasing spike timestamps. It preserves legitimate
+empty spike trains, differing coverage, and behavioral gaps without sorting,
+truncating, dropping, normalizing, or repairing measurements.
+
+Nineteen loader tests use tiny synthetic HDF5 reference fixtures, including
+MATLAB empty cells and a deliberately unreadable waveform link. They check
+mapping/orientation, gaps/coverage preservation, and meaningful invalid inputs.
+Together with the existing installation check, **20 tests passed**. The real
+recording passed loader validation separately; it is not a test fixture. Lint,
+formatting, and lockfile consistency checks passed.
 
 ## Reproduce acquisition and verification (Windows PowerShell)
 
@@ -128,8 +256,8 @@ The first command should show shared ignore rules; the second should print
 nothing (exit code 1 means neither small file is ignored). The last must print
 nothing. Commit only the manifest/documentation, never recording bytes.
 
-Phase 1A verifies identity and acquisition only. No MATLAB loader, feature bins,
-velocity targets, evaluation splits, training, or visualization exists yet.
+Phase 1B adds raw-file inspection and a validated loader. Feature bins, velocity
+targets, evaluation splits, training, and visualization remain unimplemented.
 The data come from recorded nonhuman-primate behavior; no human or live
-closed-loop performance claim follows. The next increment is **Phase 1B: inspect
-the actual file structure and build a minimal validated loader**.
+closed-loop performance claim follows. The next increment is **Phase 1C: visualize a short segment of neural activity
+alongside recorded movement**.

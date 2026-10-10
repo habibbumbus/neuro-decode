@@ -6,14 +6,15 @@ Estimate two-dimensional cursor velocity from recorded motor-cortex spike
 activity, and compare accuracy, temporal modeling, CPU processing latency, and
 robustness. The repository currently has a minimal Python package/tooling scaffold
 and project documentation. One recording has been acquired and checksum-verified;
-internal inspection, decoders, evaluation, and replay are pending. There are no
+raw structure and a minimal validated loader are available. Feature preparation,
+decoders, evaluation, and replay remain pending. There are no
 scientific results or measured latency claims.
 
 The first scientific milestone will use one public nonhuman-primate reaching
 session. The selected source/version, license, attribution, and checksums are
-recorded in the [dataset card](dataset.md). Channel metadata, timestamps, storage
-layout, and physical units remain pending inspection before modeling assumptions
-are implemented.
+recorded in the [dataset card](dataset.md), along with observed channel identities,
+timing, storage layout, and source-documented units. Neural/behavioral coverage
+differences and remaining alignment questions must be addressed before modeling.
 
 ## Original experiment and labels
 

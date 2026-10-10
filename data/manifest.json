@@ -44,7 +44,8 @@
         "published_checksum_matches": true,
         "status": "verified"
       },
-      "internal_inspection_status": "pending Phase 1B"
+      "internal_inspection_status": "raw schema inspected and loader-validated; alignment caveats in docs/dataset.md",
+      "inspection_date_utc": "2026-10-10"
     }
   ]
 }

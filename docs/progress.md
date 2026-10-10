@@ -392,3 +392,125 @@ The assistant performed no staging, commit, push, merge, or branch switch.
 
 After the user understanding/Git checkpoint, the next increment is **Phase 1B:
 inspect the actual file structure and build a minimal validated loader**.
+
+## Phase 1B: inspect and load the recording — October 10, 2026
+
+### Verified state and Stage 1 inspection
+
+Actual branch: `main`. Phase 1A is committed as `3797161` (progress) and
+`6656b14` (provenance/acquisition documents). Main and local origin/main both
+point to `6656b14`, recording the prior push; no new fetch/remote query was
+performed. Tracked working files and the index were clean. Preserved the existing
+untracked Windows cache directory. Read the complete local guidance, progress,
+dataset card, manifest, and package configuration; no applicable AGENTS.md was
+found. The private guidance and raw recordings remain excluded and untracked.
+
+Used the manifest's selected `indy_20161005_06.mat`, Zenodo record 583331 v1.
+Rechecked 83,957,398 bytes and SHA-256 against the manifest: matched. The header
+identifies MATLAB 7.3; h5py confirms HDF5. Inspected top-level metadata and
+references without reading waveform payloads. Added only h5py and NumPy using
+`uv add "h5py>=3.11,<4" "numpy>=1.26,<3" --cache-dir .uv-cache` through approved
+network-enabled execution. uv generated the lockfile changes and installed
+h5py 3.16.0 and NumPy 2.4.6 in the project environment.
+
+Observed behavior: 93,501 x/y samples, timestamps 1288–1662 s, span 374 s;
+mean interval 0.004 s (250 Hz), with floating-point variation only. No nonfinite
+behavioral values, duplicate/decreasing behavior times, or intervals above
+1.5 × the median were observed. This threshold is a reporting heuristic, not a
+scientific exclusion policy. Stored time shape is (1, 93501); stored positions
+are (2, 93501). Source schema and matched sample counts establish the returned
+sample-major position orientation (93501, 2).
+
+Channels are M1 001–096 in source order. Stored spike references have shape
+(5, 96), establishing five unit slots per channel. There are 323,237 spike events
+and 231 encoded empty trains; eleven channels have all five slots empty. Slot
+totals are 128,756 / 84,879 / 81,701 / 23,654 / 4,247. No nonfinite or decreasing
+spike times or duplicate within-train timestamps were observed. Spike coverage
+is approximately 1283.002344–1666.995917 s, including 5,454 events before behavior
+and 5,364 afterward. These events and empty channels are preserved.
+
+Units (seconds, cursor millimeters) come from source documentation, not numeric
+magnitudes; relevant datasets lack explicit unit attributes. The observed
+sampling interval agrees with the documented rate. An optional finger/cursor
+consistency comparison found a maximum 3.038031 mm discrepancy from the source's
+simple mapping, with varying per-axis residuals. Its cause is unresolved; it is
+not repaired or explained as filtering/lag without evidence. The stored cursor
+positions remain authoritative inputs to this loader, with caveats in dataset.md.
+
+### Stage 2 implementation
+
+- `src/neurodecode/data/__init__.py`: needed data subpackage identity.
+- `src/neurodecode/data/loaders.py`: source-specific HDF5 loader, named raw
+  `Recording`, schema/value/order validation, and timing/coverage diagnostics.
+  Returned fields are behavior_times_s [T], cursor_position_mm [T, 2], ordered
+  channel_ids [C], and spike_times_s [C][U] with variable-length event arrays.
+- `scripts/inspect_recording.py`: load one path and print a concise summary;
+  no general CLI framework.
+- `tests/test_loaders.py`: tiny generated synthetic reference fixtures and
+  nineteen meaningful extraction/validation cases. No real data in tests.
+- `pyproject.toml` and generated `uv.lock`: only the required reader/array
+  dependencies. Existing development tools retained.
+- `docs/dataset.md`: observed schema/orientation, timing, units provenance,
+  occupancy, coverage, caveats, actual returned-value example, and run commands.
+- `data/manifest.json`: inspection status/date updated; acquisition identity,
+  source bytes and checksums unchanged.
+- README/project brief: accurate loader status and reproduction instructions.
+
+MATLAB cells are dereferenced explicitly. The empty [0, 0] dimension encoding is
+recognized as zero events, not timestamps. Null references fail distinctly.
+Nonfinite values, mismatched dimensions, duplicate/decreasing behavior times,
+decreasing spike times, and unsupported structures fail clearly. Legitimate
+empty trains, duplicate spike events, gaps, and coverage differences are preserved
+and reported. The loader never sorts, truncates, repairs, bins, aggregates units
+into model features, normalizes, derives velocity, or creates evaluation splits.
+
+### Verification and limits
+
+Commands actually run (repository root):
+
+```text
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/inspect_recording.py data/raw/indy_20161005_06.mat
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+```
+
+The real-file summary agreed with the independent inspection. All **20 tests
+passed**: nineteen synthetic loader cases plus the existing installation check.
+Tests establish mapping/orientation, explicit empty handling, gap/coverage and
+spike-duplicate preservation, and rejection of malformed timestamps, positions,
+references, channels, empty encodings, and unsupported formats. A deliberately
+unreadable waveform link confirms the loader does not access waveform data.
+
+Lint passed. Initial format checks requested formatting of the two new Python
+files; Ruff formatted only those files and the final format check passed.
+Lockfile consistency and Git whitespace/exclusion review passed. Synthetic
+checks do not establish biological alignment or decoding performance. Real-file
+validation establishes this supported schema and the reported observations,
+not suitability of every session/format. Earlier MAT files and alternative
+layouts fail rather than being guessed. No tests were blocked; local runtime
+cache writes were disabled to avoid previously observed permission restrictions.
+CI, models, data preparation, and demo remain deferred.
+
+### Concepts and next increment
+
+Explained loader responsibilities, array shapes, sampling intervals, variable
+spike-train lengths, cell arrays/references, empty trains versus missing data,
+source-based units, and channel/unit identity. For example, time 1288.0 s maps to
+cursor [-7.566217, 30.195105] mm, while channel M1 001's first listed unit events
+precede that sample; event rows are not movement sample rows. After clarification,
+correctly interpreted shape (100, 2) as 100 x/y movement samples and an empty unit
+slot as zero recorded spike events rather than a missing position sample.
+Explained that regularly sampled movement and irregular spike events are not
+paired row-by-row, and that five unit slots do not imply five neurons: the first
+slot contains residual unsorted events and other slots may be empty. Independent
+explanations of event timing and channel/unit identity remain pending; no broader
+neuroscience or loader mastery is claimed.
+
+Implementation/checks are complete; changes remain uncommitted. The last verified
+commit/recorded push remains `6656b14` on main/origin/main. The assistant
+performed no staging, commit, push, merge, or branch switch.
+
+After the user understanding/Git checkpoint, the next increment is **Phase 1C:
+visualize a short segment of neural activity alongside recorded movement**.

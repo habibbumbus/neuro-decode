@@ -8,8 +8,8 @@ and controlled robustness experiments.
 **Status:** Project definition and minimal packaging are committed. Phase 0C
 development checks and temporary-environment installation passed on Windows.
 One Indy recording from Zenodo v1 has been acquired and checksum-verified;
-internal inspection is pending. No decoders, scientific results, or latency
-measurements exist yet. This is an independent project that makes no clinical
+the raw schema and minimal loader are validated. No decoders, scientific results,
+or latency measurements exist yet. This is an independent project that makes no clinical
 claims.
 
 ## Experiment and evaluation plan
@@ -38,12 +38,26 @@ closed-loop control, human performance, or clinical usability.
 See the [project brief](docs/project_brief.md) for timing, evaluation, replay,
 and limitations, and [progress](docs/progress.md) for verified repository state.
 
+## Load the acquired recording
+
+After setup and [verified acquisition](docs/dataset.md), run:
+
+```powershell
+uv run --locked python scripts/inspect_recording.py data/raw/indy_20161005_06.mat
+```
+
+The summary reports original movement samples, channel/unit spike events, timing,
+empty trains, and coverage differences. The loader preserves raw events and does
+not bin spikes, derive velocity, or prepare evaluation splits. Tests generate
+small synthetic HDF5 fixtures; real recordings remain outside tests and Git.
+
 ## Setup
 
 Python 3.11 is the supported compatibility target for this checkpoint;
 compatibility with other Python versions has not been tested. Use uv 0.12.23.
-There are no runtime dependencies yet. Existing pytest and Ruff development
-configuration is retained; scientific dependencies will be added when needed.
+Runtime dependencies are NumPy and h5py for the MATLAB 7.3 recording loader.
+Existing pytest and Ruff development configuration is retained; model/training
+dependencies will be added only when needed.
 
 ### What the setup files do
 
@@ -196,5 +210,6 @@ Raw/processed recordings, environments, caches, and generated runs remain
 untracked. Small provenance files and curated results can be tracked. Dataset
 source/version, attribution, license, and verified hashes are documented in the
 [dataset card](docs/dataset.md) and [manifest](data/manifest.json). Internal schema,
-units, and timing still require the data audit. Timing and evaluation choices
-are documented plans, not validated implementations. A license for this project's code has not been chosen.
+units, timing, coverage differences, and unresolved alignment details are
+documented in the dataset card. Feature preparation and evaluation choices
+remain plans. A license for this project's code has not been chosen.
