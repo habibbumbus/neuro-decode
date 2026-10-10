@@ -299,3 +299,96 @@ After the understanding check and user Git checkpoint, the next increment is
 source/version, file, license/attribution, size, and checksum, then verify the
 acquired bytes and record provenance. No acquisition is authorized by this
 Phase 0C checkpoint.
+
+## Phase 1A: source verification and one recording — October 9, 2026
+
+### Verified checkpoint state
+
+Branch is `main`. Phase 0C is committed as `93f1abb` (progress) and
+`aac6d3a` (development/setup documentation). Local `main` and `origin/main`
+both point to `aac6d3a`, recording the prior push; no new fetch/remote query
+was performed. Tracked working files and the index were clean on entry. Preserved
+the existing untracked `%SystemDrive%/` Windows cache directory.
+
+Read the complete local guidance, progress, README, and relevant setup files.
+No applicable `AGENTS.md` was found. The private guidance remains excluded
+through Git's local exclude file and untracked. Project Python 3.11.17 still
+imports NeuroDecode, and uv 0.12.23 is available. Existing Phase 0C test/lint
+outcomes were read rather than rerun for this acquisition/documentation slice.
+
+### Acquired and verified
+
+Retained the requested [Zenodo record 583331](https://zenodo.org/records/583331),
+explicitly labeled v1 on its page, rather than following its newer-version link.
+The [official API](https://zenodo.org/api/records/583331) confirmed the candidate
+filename, 83,957,398 bytes, published MD5, creators, publication date, and
+CC BY 4.0 license. The API's explicit version string was absent; version identity
+was checked on the record page.
+
+No existing recording was present. Downloaded only `indy_20161005_06.mat` into
+ignored `data/raw/`, using the version-specific URL and a temporary .part
+filename. Verified size and publisher MD5 before renaming to the final filename:
+
+- Actual size: **83,957,398 bytes**, matching the source metadata.
+- Published and local MD5: `5ea300952642e0fc54245144499db9bb`.
+- Local SHA-256: `4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac`.
+- Acquisition date: **2026-10-09 UTC**.
+
+Created `data/manifest.json` with record/version, DOI, stable URLs, relative
+filename/path, byte size, source/local checksums, license, citation, and date.
+Created [dataset.md](dataset.md) with experiment, source expectations, acquisition
+and verification commands, and limitations. Updated README and project-brief
+status to reflect acquisition while leaving internal inspection pending.
+
+### Commands and outcomes
+
+- Read-only Git status, history, tracking comparison, remotes, and private-file
+  exclusion/tracking checks passed.
+- Initial standard-library API request was blocked by runtime socket permissions
+  (WinError 10013). Approved `Invoke-RestMethod` calls to the exact official
+  record API succeeded. The browser's API fetch failed, but the official record
+  page and the approved local API request provided the required evidence.
+- `curl.exe --fail --location --retry 2 --connect-timeout 30 --max-time 300`
+  fetched only the selected file URL to a .part file. PowerShell
+  `Get-Item` and `Get-FileHash -Algorithm MD5`/`SHA256` verified it;
+  `Move-Item` renamed only after size and source MD5 matched.
+- Independently recomputed byte size, MD5, and SHA-256 on the final filename
+  using project Python and its standard library; all values agreed.
+- Reused the verified file when checking the dataset card's PowerShell
+  reproduction commands; no second download was performed.
+- Manifest JSON parsing, documentation consistency/whitespace review, and Git
+  raw/processed-data exclusion checks passed. Manifest and dataset card remain
+  trackable; recording and private guidance remain untracked.
+
+No scientific dependency, loader, processing, model, test, CI, or demo was added.
+The source file was not parsed internally. Hash agreement establishes byte
+identity, not scientific validity. Storage format/shapes, channel count/regions,
+unit count, duration, missingness, timestamp origins, coverage, alignment, and
+actual suitability remain pending Phase 1B. The source-documented fields/units
+are recorded explicitly as expectations, not local observations.
+
+### Concepts, learning status, and next increment
+
+Explained recording sessions, provenance, dataset licensing, checksums, and the
+paired experiment: implanted electrodes recorded spikes concurrently with hand
+movement; the tracker determined cursor position; decoding is learned afterward.
+The selected source is public nonhuman-primate data, with no human/live-control
+performance claim. Dataset licensing remains separate from project code licensing.
+
+Understanding check update — October 10, 2026: identified neural recordings as
+the neural activity measurements and tracker recordings as the paired movement
+reference. Clarified that the recorded inputs are spike-event timestamps and
+that cursor positions will later supply derived velocity labels. Correctly
+explained checksum matching as verification of the expected file bytes. After
+clarification, correctly chose the manifest-recorded dataset version for
+reproduction rather than automatically using a newer release. Exact version
+identity and byte verification serve distinct purposes; neither proves scientific
+suitability. No broader schema or neuroscience mastery is claimed.
+
+Acquisition is locally verified; commit/push status has not been rechecked during
+this understanding update.
+The last verified commit/recorded push remains `aac6d3a` on main/origin/main.
+The assistant performed no staging, commit, push, merge, or branch switch.
+
+After the user understanding/Git checkpoint, the next increment is **Phase 1B:
+inspect the actual file structure and build a minimal validated loader**.
