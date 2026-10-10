@@ -7,9 +7,10 @@ and controlled robustness experiments.
 
 **Status:** Project definition and minimal packaging are committed. Phase 0C
 development checks and temporary-environment installation passed on Windows.
-No dataset has been acquired;
-no decoders, scientific results, or latency measurements exist yet. This is an
-independent project that makes no clinical claims.
+One Indy recording from Zenodo v1 has been acquired and checksum-verified;
+internal inspection is pending. No decoders, scientific results, or latency
+measurements exist yet. This is an independent project that makes no clinical
+claims.
 
 ## Experiment and evaluation plan
 
@@ -193,6 +194,7 @@ required artifacts are already available locally.
 
 Raw/processed recordings, environments, caches, and generated runs remain
 untracked. Small provenance files and curated results can be tracked. Dataset
-selection, attribution, licensing, and verification of schema/units are pending
-the data audit. Timing and evaluation choices are documented plans, not validated
-implementations. A license for this project's code has not been chosen.
+source/version, attribution, license, and verified hashes are documented in the
+[dataset card](docs/dataset.md) and [manifest](data/manifest.json). Internal schema,
+units, and timing still require the data audit. Timing and evaluation choices
+are documented plans, not validated implementations. A license for this project's code has not been chosen.
