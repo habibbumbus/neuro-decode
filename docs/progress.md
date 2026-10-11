@@ -896,3 +896,157 @@ push, merge, or branch switch was performed by the assistant.
 
 After the understanding and user Git checkpoint, the next increment is
 **Phase 2C: derive cursor-velocity targets and align them with these bins**.
+
+## Phase 2C: aligned cursor-velocity targets — October 11, 2026
+
+### Verified starting state and prior output
+
+Branch main at 4f62fca (bin spike events into causal channel counts). Main and
+local origin/main match, recording the prior push; no new remote query/fetch
+was performed. Phase 2B code, docs and learning update are committed. Tracked
+files/index were clean on entry. Preserved the unrelated untracked Windows cache
+directory. Read the complete local guidance, progress, methods, dataset card,
+decisions, actual split/configuration, manifest, loader, binning and support code.
+No applicable AGENTS.md was found. Private guidance remains locally excluded
+and untracked; raw recordings and bulk processed arrays remain ignored/untracked.
+
+Reproduced Phase 2B's training-only command before implementation: [13079, 96]
+int64 counts, M1 001–096, all five slots, first/last bin bounds and independent
+219,913-event conservation matched its recorded results. Source remains Indy
+indy_20161005_06, Zenodo 583331 v1, SHA-256
+4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac.
+No saved Phase 2B array/cache existed to reuse; computation remains in memory.
+
+### Timing amendment and implemented files
+
+Phase 2A's methods proposed fixed nominal 20 ms division. Phase 2C explicitly
+replaces that denominator with actual selected behavioral elapsed seconds,
+as recorded in [decisions.md](decisions.md). Neural bins remain 20 ms.
+Source selection/support, fixed 6 ms age limit, partitions, purge gaps and local
+warm-up are unchanged. The actual split specification/configuration are unchanged;
+they do not prescribe a target denominator. No silent scientific-policy change
+or held-out-dependent tuning was made.
+
+- src/neurodecode/data/targets.py: AlignedTargets and actual-elapsed backward
+  differences, original-bin pairing, validity mask/reasons and source-time metadata.
+- scripts/bin_recording.py: --targets audit, retaining existing no-flag behavior
+  and source/config/split verification. Reports quality counts for all partitions
+  and only fixed first-valid training position/velocity examples.
+- tests/test_targets.py: 24 synthetic target/cause/identity/invalid-input cases.
+- docs/methods.md: effective formula, sampling, denominator bounds, structural/
+  row rejection, alignment, noise caveats, real example and audit results.
+- docs/decisions.md: explicit denominator amendment and reason.
+- README.md and docs/dataset.md: accurate implemented status and run command.
+- This entry: actual outcomes, learning state and next increment.
+
+Select latest samples <= the stored shared grid start/end, never future samples,
+with no interpolation. Divide x/y displacement by b1−b0 in seconds.
+Record both source indices/times/ages, actual elapsed time and actual-minus-nominal
+difference. Require positive elapsed time and absolute deviation <= maximum
+sample age + 2 ns (6.000002 ms here), derived from bounded ages and floating-grid
+representation. Never substitute nominal time or clamp a rejected denominator.
+
+Reuse existing binning to revalidate source counts, complete geometry, order,
+grid IDs, partition/segment identity and channel/unit mapping before pairing.
+Fail on structural mismatches rather than trimming/reordering. Duplicate,
+descending or nonfinite source timestamps and bad position dimensions fail.
+Stale segment metadata crossing a known gap fails for replanning/rebinning.
+Properly split gaps omit rows and reset support. Invalid row labels are NaN with
+explicit reasons, while counts and original identities remain intact.
+
+Reasons distinguish missing past samples, cross-segment selections, staleness,
+nonpositive elapsed time, excessive elapsed deviation, warm-up, nonfinite selected
+positions and nonfinite arithmetic. Full local support/cardinality is enforced
+without constructing history arrays. Selected nonfinite positions on a directly
+supplied Recording invalidate affected rows; existing raw-loader strict finite
+validation is retained. Counts and velocities must use the same mask.
+
+### Commands and verification
+
+Executed from the repository root:
+
+~~~text
+uv --version
+uv --cache-dir .uv-cache run --locked --no-sync python -c "import sys, numpy; print(sys.version); print(numpy.__version__)"
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/bin_recording.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_targets.py
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/bin_recording.py --targets
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+git diff --check
+~~~
+
+Observed uv 0.12.23, CPython 3.11.17 and NumPy 2.4.6. No dependency was added
+or environment reinstalled. Formatted only target module, target tests and the
+modified script. Initial 22 target cases passed; after adding empty-fragment and
+finite-input overflow cases, all 101 tests passed (77 retained plus 24 new).
+The final no-flag reproduction also preserved Phase 2B shape and per-channel
+conservation after the command extension. Lint, formatting, lock consistency
+and whitespace reviews passed. Git's existing
+LF-to-CRLF notices are normalization notices. No checks remain blocked.
+
+Synthetic evidence includes constant velocity sign/units, an irregular 16 ms
+selected interval using the actual denominator, exact and one-float-step future
+boundaries, future-position mutation, stale samples, valid gap resets/stale-gap
+refusal, purge ownership, nonpositive separation, selected nonfinite positions,
+future nonfinite values not changing past labels, finite-input arithmetic
+overflow, malformed clocks/shapes, mismatched row lengths/order/timestamps/IDs/
+counts/channel metadata, and empty aligned shapes. This evidence is separate
+from real recording observations and does not establish physiological alignment,
+noise-free labels, model performance or inference latency.
+
+### Actual recording alignment
+
+| Partition | Count rows retained | Valid aligned targets | Invalid reason |
+| --- | --- | --- | --- |
+| Training | 13079 | 13070 | 9 warmup |
+| Validation | 2784 | 2775 | 9 warmup |
+| Test | 2793 | 2784 | 9 warmup |
+
+There are 22 / 222 / 222 valid selected-time separations differing from nominal
+by >1 ns in training/validation/test respectively. These are timestamp-quality
+counts, not movement-pattern statistics. Actual deviations are retained and
+all pairs obey the predeclared bounds. Held-out labels were deterministically
+prepared for validity auditing only; no held-out movement patterns, velocity
+statistics, predictions or scores were displayed or used to tune rules.
+
+First valid training example: original row 9, global end ID 10, segment 0,
+neural bin (1288.180, 1288.200], first three channel counts [1, 1, 0].
+Selected positions are:
+at 1288.180 s, [-7.882167580583823, 30.560668915346305] mm;
+at 1288.200 s, [-7.945765364028281, 30.651556978673803] mm.
+Displacement [-0.06359778344445832, 0.09088806332749755] mm divided by actual
+0.01999999999998181 s gives [-3.179889172225808, 4.54440316637901] mm/s.
+Both source ages are zero; nominal-time deviation is -1.81903103690928e-14 s.
+The example is fixed by chronological valid identity, not selected for quality.
+
+### Concepts, pending understanding and next increment
+
+Explained position (mm) versus velocity (mm/s), signed x/y backward differences,
+past-only sample selection and explicit bin identity, actual versus nominal
+elapsed time, shared-grid floating-point boundaries, and noise amplification.
+Worked example: displacement [2, -1] mm over 16 ms gives [125, -62.5] mm/s;
+a 0.1 mm displacement error over 20 ms contributes 5 mm/s error. No noise
+filtering is implied. Understanding update: correctly selected the actual
+16 ms sample separation as denominator and rejected using a future sample for
+the current bin. Clarified conversion to 0.016 seconds for mm/s. Corrected the
+position/velocity distinction: negative x velocity means decreasing x, even when
+both positions are positive. Clarified that availability in a later bin does not
+guarantee selection; each boundary uses its latest eligible past-or-present sample.
+After a numerical recheck, correctly explained that increasing x from -5 mm
+to -3 mm gives positive x velocity despite negative positions. Signed velocity
+understanding was demonstrated in that example. An independent explanation of
+later-boundary sample selection remains pending. Earlier demonstrated bin-edge/shape understanding and remaining
+measurement/evaluation clarifications are retained as recorded in Phase 2B.
+
+No normalization, history arrays, models, replay, data download, CI, scientific
+dependencies or bulk-array persistence were added. Loader, binning implementation,
+split/support code, manifest, configuration and lockfile remain unchanged.
+Phase 2C is locally implemented and verified; changes remain uncommitted.
+Last verified commit/recorded push is 4f62fca on main/local origin/main.
+The assistant performed no staging, commit, push, merge or branch switch.
+
+After the understanding and user Git checkpoint, the next increment is
+**Phase 2D: fit count normalization on training data only**.

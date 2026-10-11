@@ -26,3 +26,23 @@ source-bound specification now; exact eligible indices remain pending. No count
 bins, velocity arrays, learned preprocessing, or model-state implementation are
 included. See [methods.md](methods.md) for support formulas, endpoint conventions,
 reproduction, rationale, and limitations.
+
+## 2026-10-11 — Actual elapsed time for velocity targets
+
+Use selected behavioral elapsed time b1−b0 as the velocity denominator, explicitly
+superseding the earlier fixed nominal 20 ms choice. The neural grid remains
+20 ms. Record both source times/ages and actual-minus-nominal separation.
+Constant-velocity synthetic data with a 16 ms selected interval recover the
+correct mm/s with this denominator; nominal division would bias the value.
+
+Accept positive separation within nominal width ± (maximum sample age + 2 ns),
+derived from bounded sample ages and grid representation. Never substitute or
+clamp a rejected denominator. Continue past-only selection, shared grid edges,
+partition/segment ownership and local warm-up. Source-support extent is unchanged;
+the saved split boundaries and purge distances require no alteration.
+
+Keep full count rows, invalid target NaNs, original bin IDs and explicit validity
+reasons. Use one mask for paired counts/targets. Revalidate bin identities/content
+through the existing binning implementation. Audit held-out validity counts only;
+show source positions/velocities only from fixed early training rows.
+No fitted transforms, histories, models or array persistence are included.

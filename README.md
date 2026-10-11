@@ -11,7 +11,8 @@ One Indy recording from Zenodo v1 has been acquired and checksum-verified;
 the raw schema and minimal loader are validated. An early recorded-data figure
 and a source-bound chronological split/timing plan are available. Causal
 20 ms channel counts are implemented and verified on training data.
-Velocity targets remain unimplemented. No decoders, scientific results,
+Aligned cursor-velocity targets are implemented with actual sample elapsed time.
+No decoders, scientific results,
 or latency measurements exist yet. This is an independent project that makes no clinical
 claims.
 
@@ -89,7 +90,22 @@ The command verifies source/configuration/split identity, constructs complete
 and a fixed early example. Counts aggregate all source unit slots into each
 ordered M1 channel. Arrays remain in memory; no processed cache is saved or
 reused. See [methods](docs/methods.md) for exact edges, gap and aggregation rules.
-Velocity targets, normalization, histories, and models remain unimplemented.
+The no-flag command constructs counts only. Normalization, histories, and models
+remain unimplemented.
+
+## Audit aligned cursor velocity
+
+~~~powershell
+uv run --locked python scripts/bin_recording.py --targets
+~~~
+
+This reuses the verified recording/split contract and prints valid target counts
+and rejection reasons per partition, with position/velocity examples from fixed
+early training rows only. Targets use past-or-present positions divided by their
+actual elapsed seconds; this explicitly supersedes the earlier fixed 20 ms
+denominator proposal. Original count rows and bin IDs remain intact, with one
+shared validity mask for paired counts/labels. Arrays remain in memory. See
+[methods](docs/methods.md) for sampling limits, warm-up and rejection rules.
 
 ## Setup
 
@@ -253,6 +269,7 @@ source/version, attribution, license, and verified hashes are documented in the
 [dataset card](docs/dataset.md) and [manifest](data/manifest.json). Internal schema,
 units, timing, coverage differences, and unresolved alignment details are
 documented in the dataset card. Chronological partitions and timing are specified in
-[methods](docs/methods.md). Causal channel binning is implemented; target and
-history construction, normalization, and model evaluation remain unimplemented.
+[methods](docs/methods.md). Causal counts and aligned velocity labels are
+implemented; history construction, normalization, and model evaluation remain
+unimplemented.
 A license for this project's code has not been chosen.

@@ -1,4 +1,4 @@
-# Causal timing and chronological evaluation — Phase 2A
+# Causal timing, chronological evaluation and velocity alignment
 
 ## Recording and scope
 
@@ -11,8 +11,9 @@ not an outage indicator. Physical synchronization and the finger/cursor
 discrepancy remain unresolved in [the dataset card](dataset.md).
 
 Phase 2A planned boundaries without count bins. Phase 2B now constructs causal
-channel counts as documented below; velocity arrays, transforms, eligible
-feature indices, and model predictions remain unimplemented.
+channel counts, and Phase 2C adds aligned velocity targets. Transforms, history
+arrays and model predictions remain unimplemented. The saved specification's
+model-window/scoring indices remain unmaterialized; target validity is explicit.
 
 ## Timing contract
 
@@ -32,14 +33,13 @@ For an emission associated with bin end t:
 | Conservative target source envelope | [t−Δ−0.006−0.000000001, t], including age-comparison tolerance. |
 | Prediction availability | At or after t plus actual computation delay; latency remains unmeasured. |
 
-Future velocity construction will compute (p(b1) − p(b0)) / 0.020 in mm/s,
-separately for x/y. This defines completed-bin displacement rate using sampled
-positions associated with the boundaries. When samples precede boundaries, it
-approximates continuous movement over the nominal interval; retain actual source
-times and ages. Use the declared bin width as denominator, not an undocumented
-varying sample separation. Do not interpolate using later samples. This is
-completed-interval estimation, not future forecasting. Positions provide targets
-and scoring references, never neural decoder inputs.
+Phase 2C computes (p(b1) − p(b0)) / (b1−b0) in mm/s, separately for x/y.
+This explicitly supersedes Phase 2A's proposed fixed 0.020 s denominator.
+The actual selected interval and its difference from nominal are recorded under
+the validity policy below. It estimates average velocity over that past sampled
+interval, associated with the just-completed neural bin; it is not forecasting.
+Do not interpolate using later samples. Positions provide targets and scoring
+references, never neural decoder inputs.
 
 Select each behavioral sample using searchsorted(side="right") − 1.
 The fixed maximum age is 6 ms, 1.5 times the source-documented 4 ms period.
@@ -54,10 +54,11 @@ and bin-edge handling remain pending construction.
 
 At t = 1288.200 s, features may use spikes in (1288.000, 1288.200]; the final
 bin is (1288.180, 1288.200]. On this recording the helper selected behavioral
-indices 45 and 50, at exactly 1288.180 and 1288.200 s. A future target would use
-those two x/y positions divided by 0.020 s. Its conservative source envelope
-begins at approximately 1288.174 s (1 ns earlier with the tolerance). Nothing after 1288.200 s is allowed. This checked timestamp
-selection only; no velocity value was calculated.
+indices 45 and 50, at exactly 1288.180 and 1288.200 s. The target uses
+those two x/y positions divided by their actual elapsed seconds (approximately
+0.020 s here), under the effective Phase 2C policy. Its conservative source envelope
+begins at approximately 1288.174 s (1 ns earlier with the tolerance). Nothing after 1288.200 s is allowed. That Phase 2A check verified timestamp
+selection only; the Phase 2C calculation and positions are documented below.
 
 For a small timeline example, an emission at 10.200 s requires neural history
 (10.000, 10.200] and positions associated with 10.180 and 10.200 s. If validation
@@ -287,5 +288,158 @@ construction, incomplete/excluded edges, gaps, ownership, and invalid inputs.
 All 77 tests, including 55 retained checks, passed; lint and formatting passed.
 These checks establish count extraction and tested boundary behavior, not
 physiological alignment, neural continuity, decoding performance, or velocity
-target correctness. Next: Phase 2C, derive cursor-velocity targets and align
-them with these bins.
+target correctness. These are Phase 2B results; Phase 2C is documented below.
+
+## Velocity target alignment — Phase 2C, October 11, 2026
+
+### Effective denominator and sampled support
+
+Phase 2C explicitly supersedes Phase 2A's fixed nominal-width denominator.
+For source samples at b0 and b1, compute:
+
+v = (p(b1) − p(b0)) / (b1 − b0), independently for x/y, in mm/s.
+
+Nominal neural bins remain 20 ms. Record actual elapsed_s = b1−b0,
+elapsed_deviation_s = elapsed_s−0.020, and both source sample ages. The label
+is average velocity over the actual selected sample interval [b0, b1], associated
+with the just-completed neural bin; when ages differ, that interval differs from
+the nominal bin. This is an approximation to movement over the nominal interval,
+not noiseless instantaneous velocity or future forecasting.
+
+Use the latest stored sample at or before each stored bin edge, with
+searchsorted(side="right")−1. The left edge is the bin's shared grid edge g(k−1),
+mathematically t−Δ, instead of independently subtracting Δ from a float end.
+This follows Phase 2B's shared-edge rule and prevents one-rounding-step
+disagreements between neural and behavioral boundaries. There is no future-sample
+epsilon or interpolation. Ages must be nonnegative and ≤6 ms + 1 ns.
+
+A pair is valid only if actual elapsed time is positive and
+abs(elapsed_s−nominal_bin_s) ≤ max_behavior_age_s + 2 ns, currently 6.000002 ms.
+The age difference bounds the departure from bin width; the first ns is the
+existing sample-age tolerance, and the second accommodates nominal-grid
+floating-point representation. The source samples and partition ownership are
+never moved by these comparison tolerances. Reject a pair outside the bound;
+do not clamp its denominator, replace it with 20 ms, or rescale velocity.
+This policy was fixed before auditing any held-out outcomes. The source support
+bound is unchanged, so saved purge distances and boundaries remain valid.
+
+For intuition, displacement (2, −1) mm across selected timestamps 16 ms apart
+gives (125, −62.5) mm/s. Dividing by nominal 20 ms would instead give
+(100, −50) mm/s. Differences magnify position noise: a 0.1 mm displacement error
+over 20 ms produces a 5 mm/s velocity error; shorter intervals amplify it more.
+No smoothing or noise correction is implemented.
+
+### Identity, validity, and partition rules
+
+align_velocity_targets in src/neurodecode/data/targets.py returns AlignedTargets.
+Its bins field retains the original BinnedSpikes object and all count rows,
+channels, bin edges, global integer end indices, partition and segment IDs.
+velocity_mm_s is [T, 2]; valid_mask is [T]; reasons records "valid" or the first
+exclusion reason. source_indices, source_time_s, and sample_age_s are [T, 2],
+ordered as left/right selections. elapsed_s and elapsed_deviation_s are [T].
+Unavailable indices are −1; unavailable timestamps/ages and invalid velocities
+are NaN. Invalid labels are never replaced by zero velocity. valid_rows identifies
+original count rows and preserves their explicit bin identities.
+
+Reuse bin_partition to validate supplied counts against the verified recording
+and specification before alignment. Fail on mismatched shapes, row order, counts,
+timestamps (even one float step), global/segment IDs, channel/unit mapping, or
+segment metadata. Never trim, sort, silently reorder, or align solely by length.
+This intentionally recomputes counts for validation; it is preparation logic,
+not an inference-latency benchmark. Use one shared mask:
+
+~~~python
+targets = align_velocity_targets(recording, bins, specification, config)
+count_rows = targets.bins.counts[targets.valid_mask]
+velocity_rows = targets.velocity_mm_s[targets.valid_mask]
+original_rows = targets.valid_rows
+~~~
+
+The masked example above is a paired single-bin view, not a history-building
+input. Future history construction must use the full original bin sequence and
+segment metadata; windowing filtered rows would stitch across exclusions and
+lose warm-up source events.
+
+Count rows include warm-up source data. Target eligibility additionally requires
+the full configured support inside the same retained segment: ten consecutive
+grid bins here, with their left history edge and conservative behavioral source
+envelope not preceding segment start. This checks support/cardinality without
+constructing a history array. Prefix targets are marked warmup; every new segment
+starts fresh. Future history construction must respect the same original IDs
+and mask, including any unavailable data-quality rows.
+
+Malformed/nonfinite, duplicate or nonmonotonic behavioral timestamps and mismatched
+position dimensions are structural errors: fail clearly before searching.
+Existing loader rejection of nonfinite raw positions remains unchanged.
+For a directly supplied Recording with a nonfinite selected position, invalidate
+that target row; unrelated future position values cannot change an earlier label.
+Finite selected positions whose difference/division overflows also invalidate
+the row rather than emitting infinity.
+
+The first row reason follows this order:
+
+1. missing_past_sample: no sample exists at/before a boundary.
+2. cross_segment_sample: a selected sample belongs outside the same retained segment.
+3. stale_sample: a selected sample's age violates the fixed limit.
+4. nonpositive_elapsed: the two selected sample times do not provide positive elapsed time.
+5. elapsed_deviation: elapsed time departs too far from the nominal bin width.
+6. warmup: incomplete local neural/behavioral support.
+7. nonfinite_position: a selected source coordinate is not finite.
+8. nonfinite_velocity: the arithmetic result is not finite.
+
+A stale saved segment crossing an actual behavioral gap fails clearly and requires
+replanning/rebinning under the existing >6 ms + 1 ns policy. Properly planned
+gaps have no count rows and restart warm-up. Source samples cannot cross partition
+boundaries or purge gaps. There is no interpolation, sorting, repair, smoothing,
+normalization, learned channel exclusion, or behavioral model input.
+
+### Reproduction and actual results
+
+~~~powershell
+uv run --locked python scripts/bin_recording.py --targets
+~~~
+
+The existing command retains its no-flag Phase 2B training-count behavior.
+The new flag reuses source SHA-256/configuration/split verification, derives
+targets independently in each partition, and prints only validity/timestamp
+quality counts for validation/test. Examples are the first three valid training
+rows in fixed identity order. All arrays remain in memory; no cache is saved
+or reused. Held-out target preparation is a deterministic quality audit, not
+model scoring or movement-pattern inspection; no parameters or boundaries were
+tuned from those partitions.
+
+| Partition | Count rows retained | Valid aligned targets | Excluded reason |
+| --- | --- | --- | --- |
+| Training | 13079 | 13070 | 9 warmup |
+| Validation | 2784 | 2775 | 9 warmup |
+| Test | 2793 | 2784 | 9 warmup |
+
+Actual selected elapsed times depart from nominal by >1 ns in 22 valid training
+rows, 222 validation rows, and 222 test rows. These are timestamp-quality counts,
+not movement statistics. Every deviation is retained, and all pairs satisfy
+the predeclared age/separation bounds. Do not silently force them to 20 ms.
+
+The first valid training row is original count row 9, global end index 10,
+segment 0, neural bin (1288.180, 1288.200]. Its first three channel counts are
+[1, 1, 0]. The selected source positions are:
+
+| Source time (s) | Cursor x (mm) | Cursor y (mm) |
+| --- | --- | --- |
+| 1288.180 | −7.882167580583823 | 30.560668915346305 |
+| 1288.200 | −7.945765364028281 | 30.651556978673803 |
+
+Displacement is (−0.06359778344445832, 0.09088806332749755) mm.
+Actual elapsed time is 0.01999999999998181 s, differing from nominal by
+−1.81903103690928e−14 s. Dividing displacement by that elapsed time yields
+(−3.179889172225808, 4.54440316637901) mm/s. Both sample ages are zero here.
+The negative x value means movement toward decreasing x, not negative speed.
+
+Twenty-four new synthetic target tests cover constant velocity and units,
+irregular sampling/actual denominator, exact/future boundaries, future-value
+mutation (including nonfinite future positions), stale samples, gap resets/refusal,
+purge ownership, nonpositive separation, nonfinite positions/arithmetic,
+malformed clocks/shapes, identity/content mismatch and empty fragments.
+All 101 tests passed, along with lint, formatting and lock consistency.
+This verifies implemented target arithmetic and tested causal pairing, not
+physiological synchronization, noiseless movement, model quality or inference
+latency. Next increment: Phase 2D, fit count normalization on training data only.

@@ -1,17 +1,90 @@
-"""Verify provenance, bin training spikes, and print a fixed early example in memory."""
+"""Verify counts or audit aligned targets; show activity examples only for training."""
 
+import argparse
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
 
 from neurodecode.data.binning import bin_partition
-from neurodecode.data.loaders import load_recording
-from neurodecode.splits import plan_splits, read_config
+from neurodecode.data.loaders import Recording, load_recording
+from neurodecode.data.targets import align_velocity_targets
+from neurodecode.splits import TimingConfig, plan_splits, read_config
+
+
+def print_target_summary(
+    recording: Recording, specification: dict[str, object], config: TimingConfig
+) -> None:
+    """Audit all partition eligibility, showing positions/velocities only for training."""
+    for partition in specification["partitions"]:
+        bins = bin_partition(recording, specification, config, partition["name"])
+        targets = align_velocity_targets(recording, bins, specification, config)
+        rows = targets.valid_rows
+        print(
+            json.dumps(
+                {
+                    "partition": bins.partition,
+                    "count_rows": int(bins.counts.shape[0]),
+                    "aligned_valid_rows": int(rows.size),
+                    "invalid_reasons": dict(
+                        Counter(
+                            reason for reason in targets.reasons if reason != "valid"
+                        )
+                    ),
+                    "elapsed_deviations_over_1ns": int(
+                        np.count_nonzero(
+                            np.abs(targets.elapsed_deviation_s[targets.valid_mask])
+                            > 1e-9
+                        )
+                    ),
+                    "target_policy": targets.policy,
+                },
+                indent=2,
+            )
+        )
+        if bins.partition == "train":
+            print("First three valid training targets (fixed identity order):")
+            for row in rows[:3]:
+                selected = targets.source_indices[row]
+                positions = recording.cursor_position_mm[selected]
+                print(
+                    json.dumps(
+                        {
+                            "original_count_row": int(row),
+                            "grid_end_index": int(bins.grid_end_indices[row]),
+                            "segment_id": int(bins.segment_ids[row]),
+                            "neural_bin_s": [
+                                float(bins.bin_start_s[row]),
+                                float(bins.bin_end_s[row]),
+                            ],
+                            "first_three_channel_counts": bins.counts[row, :3].tolist(),
+                            "source_position_times_s": targets.source_time_s[
+                                row
+                            ].tolist(),
+                            "source_positions_mm": positions.tolist(),
+                            "sample_age_s": targets.sample_age_s[row].tolist(),
+                            "displacement_mm": (positions[1] - positions[0]).tolist(),
+                            "denominator_s": float(targets.elapsed_s[row]),
+                            "denominator_minus_nominal_s": float(
+                                targets.elapsed_deviation_s[row]
+                            ),
+                            "velocity_mm_s": targets.velocity_mm_s[row].tolist(),
+                        },
+                        indent=2,
+                    )
+                )
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--targets",
+        action="store_true",
+        help="Audit aligned targets in all partitions; show training examples only",
+    )
+    args = parser.parse_args()
     manifest = json.loads(Path("data/manifest.json").read_text(encoding="utf-8"))
     if len(manifest["recordings"]) != 1:
         raise ValueError("This checkpoint expects exactly one acquired recording")
@@ -57,6 +130,10 @@ def main() -> None:
             raise ValueError(
                 f"Saved split contract disagrees with verified metadata: {key}"
             )
+    if args.targets:
+        print("Verified source/configuration/split identity; no arrays saved or cached")
+        print_target_summary(recording, specification, config)
+        return
     binned = bin_partition(recording, specification, config, partition="train")
     expected_counts = np.zeros(len(binned.channel_ids), dtype=np.int64)
     for segment in binned.segment_metadata:

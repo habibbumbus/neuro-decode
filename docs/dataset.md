@@ -337,7 +337,12 @@ lexical identity order and no activity-based exclusion. Training output is
 [13079, 96], with 219,913 events conserved over included complete bins.
 Run uv run --locked python scripts/bin_recording.py; see [methods.md](methods.md)
 for exact grid/edge policies and the raw-timestamp example. Counts remain in
-memory; no processed cache is saved or reused. Velocity arrays, history windows,
-and training remain unimplemented. The data come from recorded nonhuman-primate
-behavior; no human or live closed-loop claim follows. Next: Phase 2C, derive
-cursor-velocity targets and align them with these bins.
+memory; no processed cache is saved or reused. Phase 2C aligns cursor-velocity
+labels in mm/s using actual selected behavioral elapsed time, with past-only
+sampling and explicit masks/reasons. The --targets option reports 13,070 training,
+2,775 validation and 2,784 test valid rows, with nine warm-up exclusions each.
+Only fixed early training position/velocity examples are displayed. See
+[methods.md](methods.md) for the denominator amendment and exact policies.
+History windows, normalization, and training remain unimplemented. The data come
+from recorded nonhuman-primate behavior; no human or live closed-loop claim
+follows. Next: Phase 2D, fit count normalization on training data only.
