@@ -1,4 +1,4 @@
-"""Verify counts or audit aligned targets; show activity examples only for training."""
+"""Verify counts, targets or histories; show activity examples only for training."""
 
 import argparse
 import hashlib
@@ -8,7 +8,13 @@ from pathlib import Path
 
 import numpy as np
 
+from neurodecode.data import features as feature_module
 from neurodecode.data.binning import bin_partition
+from neurodecode.data.features import (
+    build_history_windows,
+    fit_count_scaler,
+    flatten_features,
+)
 from neurodecode.data.loaders import Recording, load_recording
 from neurodecode.data.targets import align_velocity_targets
 from neurodecode.splits import TimingConfig, plan_splits, read_config
@@ -77,12 +83,120 @@ def print_target_summary(
                 )
 
 
+def print_feature_summary(
+    recording: Recording, specification: dict[str, object], config: TimingConfig
+) -> None:
+    """Reuse aligned data, fit once on training, and audit held-out shapes only."""
+    train_bins = bin_partition(recording, specification, config, "train")
+    train_targets = align_velocity_targets(recording, train_bins, specification, config)
+    scaler = fit_count_scaler(train_targets, specification, config)
+    metadata = scaler.to_metadata()
+    metadata["implementation_sha256_utf8_lf"] = hashlib.sha256(
+        Path(feature_module.__file__).read_text(encoding="utf-8").encode()
+    ).hexdigest()
+    output = Path("runs/phase2d/count_scaler.json")
+    serialized = json.dumps(metadata, indent=2, allow_nan=False) + "\n"
+    if output.exists() and output.read_text(encoding="utf-8") != serialized:
+        raise ValueError(
+            f"Different scaler metadata exists at {output}; preserve/review it"
+        )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(serialized, encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                "normalization_metadata": output.as_posix(),
+                "fitted_unique_training_bins": scaler.fitted_bin_count,
+                "identity": dict(scaler.identity),
+                "channel_count": len(scaler.channel_ids),
+                "constant_training_channels": [
+                    name
+                    for name, quiet in zip(
+                        scaler.channel_ids, scaler.constant_channels, strict=True
+                    )
+                    if quiet
+                ],
+                "first_channel": scaler.channel_ids[0],
+                "first_channel_mean": float(scaler.means[0]),
+                "first_channel_scale": float(scaler.scales[0]),
+                "fit_basis": metadata["fit_basis"],
+                "bulk_array_persistence": "none",
+            },
+            indent=2,
+        )
+    )
+    for partition in specification["partitions"]:
+        if partition["name"] == "train":
+            targets = train_targets
+        else:
+            bins = bin_partition(recording, specification, config, partition["name"])
+            targets = align_velocity_targets(recording, bins, specification, config)
+        windows = build_history_windows(targets, specification, config)
+        X = scaler.transform(windows)
+        flat = flatten_features(X)
+        print(
+            json.dumps(
+                {
+                    "partition": windows.partition,
+                    **windows.summary,
+                    "X_raw_shape": list(windows.X_raw.shape),
+                    "X_normalized_shape": list(X.shape),
+                    "y_shape": list(windows.y.shape),
+                    "flattened_shape": list(flat.shape),
+                },
+                indent=2,
+            )
+        )
+        if windows.partition == "train":
+            print("First three training histories, selected by chronological identity:")
+            for example in range(min(3, windows.y.shape[0])):
+                print(
+                    json.dumps(
+                        {
+                            "original_target_row": int(windows.target_rows[example]),
+                            "target_bin_id": int(
+                                windows.target_bin_end_indices[example]
+                            ),
+                            "segment_id": int(windows.segment_ids[example]),
+                            "source_bin_ids": windows.source_bin_end_indices[
+                                example
+                            ].tolist(),
+                            "source_bin_start_s": windows.source_bin_start_s[
+                                example
+                            ].tolist(),
+                            "source_bin_end_s": windows.source_bin_end_s[
+                                example
+                            ].tolist(),
+                            "channel_feature_shape": list(windows.X_raw[example].shape),
+                            "aligned_velocity_mm_s": windows.y[example].tolist(),
+                            "first_channel_raw_counts": windows.X_raw[
+                                example, :, 0
+                            ].tolist(),
+                            "first_channel_normalized": X[example, :, 0].tolist(),
+                            "oldest_feature_calculation": {
+                                "raw": int(windows.X_raw[example, 0, 0]),
+                                "training_mean": float(scaler.means[0]),
+                                "training_scale": float(scaler.scales[0]),
+                                "normalized": float(X[example, 0, 0]),
+                            },
+                        },
+                        indent=2,
+                    )
+                )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
         "--targets",
         action="store_true",
         help="Audit aligned targets in all partitions; show training examples only",
+    )
+    modes.add_argument(
+        "--features",
+        action="store_true",
+        help="Build histories and frozen training-only normalization; aggregate held-out audit",
     )
     args = parser.parse_args()
     manifest = json.loads(Path("data/manifest.json").read_text(encoding="utf-8"))
@@ -130,6 +244,9 @@ def main() -> None:
             raise ValueError(
                 f"Saved split contract disagrees with verified metadata: {key}"
             )
+    if args.features:
+        print_feature_summary(recording, specification, config)
+        return
     if args.targets:
         print("Verified source/configuration/split identity; no arrays saved or cached")
         print_target_summary(recording, specification, config)

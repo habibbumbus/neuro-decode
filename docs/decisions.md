@@ -46,3 +46,26 @@ reasons. Use one mask for paired counts/targets. Revalidate bin identities/conte
 through the existing binning implementation. Audit held-out validity counts only;
 show source positions/velocities only from fixed early training rows.
 No fitted transforms, histories, models or array persistence are included.
+
+
+## 2026-10-11 — Histories and unique-bin training normalization
+
+Use oldest-to-newest histories of ten original 20 ms channel-count bins, paired
+with the final bin's existing velocity label. Keep full source IDs/timestamps
+and reject gaps, invalid rows, segment changes and partition crossings.
+Warm-up labels may be unavailable while their source counts remain valid.
+Zero counts are legitimate observations; other target-quality exclusions
+conservatively break histories, as do explicitly known invalid neural bins.
+
+Fit per-channel population mean/standard deviation over unique valid original
+training bins once, including warm-up source counts. Avoid overlap weighting
+from repeated window entries. Use frozen statistics on all partitions; exact
+zero training standard deviation uses scale 1 with the channel retained.
+Keep raw counts separate for later Kalman/robustness use; do not scale velocity.
+
+The fit is offline across training, so intentional refitting on changed later
+training data can change statistics. Causality applies to raw histories and
+application of a frozen scaler. Held-out values never fit/update it.
+Save small ignored fit metadata with source/split/configuration/policy/code and
+fit-row/count hashes. Persist no bulk arrays or models at this checkpoint.
+See [methods](methods.md) for eligibility, formulas, examples and limitations.

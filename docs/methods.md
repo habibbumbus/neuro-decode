@@ -443,3 +443,153 @@ All 101 tests passed, along with lint, formatting and lock consistency.
 This verifies implemented target arithmetic and tested causal pairing, not
 physiological synchronization, noiseless movement, model quality or inference
 latency. Next increment: Phase 2D, fit count normalization on training data only.
+
+
+## Causal histories and training-only transforms — Phase 2D, October 11, 2026
+
+### Window order, eligibility and provenance
+
+Reuse AlignedTargets and its original BinnedSpikes; do not parse or independently
+realign source data. build_history_windows in src/neurodecode/data/features.py
+uses configured L=10, Δ=0.020 s, the unchanged global grid origin 1288 s, and
+the saved partition/segment contract. For original target row r, use count rows
+r−L+1 through r, oldest to newest. The target belongs to the final bin.
+Return integer X_raw [N, L, C] and y [N, 2] in mm/s. C=96 here, in the established
+M1 001 through M1 096 order, with every source unit slot still aggregated within
+its channel. An aggregate channel is not a single neuron.
+
+Retain original source_rows [N,L], source_bin_end_indices [N,L], every source
+bin's start/end timestamps [N,L], target_rows [N], target_bin_end_indices [N],
+target_time_s [N], segment_ids [N], channel order, contributing unit slots,
+partition and source/split/configuration/target-policy identity. The first and
+last source identities are columns 0 and L−1; target identity equals the last.
+Do not window a previously filtered count matrix or infer pairing by length.
+
+Require all L original source rows to be valid, have consecutive global integer
+grid IDs and exactly shared edges, and belong to the same retained partition
+and continuous segment. Require the final target to be valid. Validate full row
+lengths, finite valid labels, target mask/reason agreement, exact grid timestamps,
+channel/unit mapping lengths, and ordered segment ownership. Fail on mismatch;
+never sort, trim, repair, interpolate or shift source data.
+
+A warmup target exclusion represents an unavailable label with valid source
+counts. Such prefix counts can supply the first complete history; otherwise
+warm-up would accidentally be imposed twice. Other target-quality exclusions
+conservatively invalidate that row for subsequent neural histories too.
+An optional explicit boolean bin_valid_mask can additionally mark known
+missing/invalid observations. An all-zero count row is valid and does not mark
+a gap. Properly planned discontinuities have no rows, and must not be bridged.
+
+Drop incomplete prefix windows in each segment. After an invalid or missing
+bin, require L fresh consecutive valid bins; do not stitch across the excluded
+row. Summary rejection reasons are warmup (incomplete prefix or upstream
+warm-up exclusion), invalid_target, discontinuous_history, and
+invalid_history_bin, in that precedence. Each excluded target row receives one
+reason; invalid_windows excludes the separate warm-up count. Missing source
+time has no candidate row and is not counted as a fabricated zero row.
+
+For an exploratory hand example with L=3 and channels A/B:
+rows [0,1], [2,3], [4,5] produce one window
+[[0,1], [2,3], [4,5]], paired with the final row's velocity.
+flatten_features uses C-order reshape: [0,1,2,3,4,5], oldest lag first with
+channels varying fastest. unflatten_features explicitly checks L and C and
+reverses it. Actual [N,10,96] becomes [N,960]; no ridge model is trained.
+
+### Normalization fit, application and replay metadata
+
+Fit per-channel statistics over unique valid training source-count rows exactly
+once, including valid warm-up bins. Do not fit over repeated entries from
+overlapping windows, which would weight middle bins more than edge bins.
+The same source-validity policy applies to the fit. No held-out activity or labels
+select channels, fit statistics, tune rules or change order.
+
+For M valid original training bins and channel c:
+
+- μ_c = sum_i count[i,c] / M.
+- σ_c = sqrt(sum_i (count[i,c]−μ_c)^2 / M), population standard deviation (ddof=0).
+- s_c = σ_c when σ_c > 0, otherwise 1.
+- z[n,l,c] = (X_raw[n,l,c]−μ_c) / s_c.
+
+The same channel transform applies at all lags. Means/scales are in events per
+20 ms bin; normalized features are dimensionless. Do not normalize y, which
+remains mm/s. Constant/silent training channels stay in their original positions.
+Their training normalized values are zero; later nonconstant activity uses the
+same frozen mean and scale 1 rather than being discarded.
+
+fit_count_scaler rejects a non-training partition. FrozenCountScaler stores
+read-only means, scales and constant-channel flags. transform returns a new
+floating array without overwriting X_raw, source counts, targets or fitted
+statistics. Reject source/split/configuration/target-policy, channel/unit order
+or history-dimension mismatch when applying it. Raw counts remain available
+for the later Kalman observation path and robustness work.
+
+This is an offline fit over the whole designated training partition. Changing
+later observations within training and deliberately refitting can legitimately
+change statistics. That differs from deployment causality: once fitted, incoming
+future counts and held-out values cannot update the frozen scaler or an earlier
+history. The tests check causal raw windows and frozen transformations separately;
+they do not claim an offline refit is causal within its training interval.
+Fitting on validation/test would leak their activity distribution into learned
+preprocessing, even without reading their labels.
+
+The reproducible command saves runs/phase2d/count_scaler.json, ignored by Git.
+Metadata retain all fitted means/scales, constant flags, ordered channel IDs and
+unit slots, L, source SHA-256, canonical split SHA-256, LF configuration SHA-256,
+target-policy SHA-256, feature implementation SHA-256, fit basis, formulas,
+units and flattening order. Two additional SHA-256 values identify included
+training (segment ID, global bin ID) pairs and original fitted counts, encoded
+as row-major little-endian int64 bytes. Future replay must preserve these
+identities and conventions and use the frozen training statistics.
+
+No bulk processed arrays or window cache are saved/reused. The command always
+recomputes from the verified recording and unchanged split using existing
+components. An identical metadata rerun is accepted; a differing file at the
+output path raises an error instead of overwriting existing work. Preserve and
+review the old output before intentionally choosing a new fit.
+
+### Reproduction, real example and limits
+
+~~~powershell
+uv run --locked python scripts/bin_recording.py --features
+~~~
+
+| Partition | Valid source bins | Retained windows | Warm-up exclusions | Other invalid windows | X shape | y shape |
+| --- | --- | --- | --- | --- | --- | --- |
+| Training | 13079 | 13070 | 9 | 0 | [13070,10,96] | [13070,2] |
+| Validation | 2784 | 2775 | 9 | 0 | [2775,10,96] | [2775,2] |
+| Test | 2793 | 2784 | 9 | 0 | [2784,10,96] | [2784,2] |
+
+Raw and normalized X share the same shapes. Flattened shapes are [13070,960],
+[2775,960], [2784,960]. Held-out outputs are counts/shapes only; examples come
+from the first three eligible training target identities. No held-out movement
+patterns, activity summaries, scores or tuned rules are reported.
+
+First training example: partition train, segment 0, source bin IDs 1–10,
+target row 9 and end ID 10. Ten source bin ends are
+[1288.020,1288.040,1288.060,1288.080,1288.100,1288.120,1288.140,1288.160,
+1288.180,1288.200] s. Each begins at its preceding shared edge, starting at
+1288.000 s. The raw feature shape is [10,96], covering (1288.000,1288.200].
+Its aligned target is [−3.179889172225808,4.54440316637901] mm/s,
+using the Phase 2C selected positions at 1288.180 and 1288.200 s.
+
+M1 001 counts in that history are [0,2,1,2,1,1,2,2,1,1].
+Its training mean is 0.12890893799220124 and population scale is
+0.36460280279149737. The oldest feature is therefore
+(0−0.12890893799220124)/0.36460280279149737 =
+−0.35355992056352736. A negative normalized value means below the training
+mean; it does not mean a negative event count. Eleven channels are constant
+in training and retained: M1 009, 047, 055, 058, 061, 068, 071, 078, 079, 082, 096.
+
+Twenty-four new synthetic checks cover hand-calculated order/final-target pairing,
+reversible flattening, silence versus missing/invalid bins, gaps/partition
+ownership, future-count mutation, frozen held-out application, unique-bin fit,
+constant channels, metadata, malformed identity/shapes and empty windows.
+All 125 tests passed, including 101 retained tests; Ruff lint/format and lock
+consistency passed. The real command ran successfully and reproduced identical
+metadata on rerun. These checks establish tested preparation behavior and actual
+tensor eligibility, not decoding performance, physiological timing, independent
+samples, noise-free targets, or latency. Overlapping windows remain correlated.
+
+No models, target scaling, feature smoothing or evaluation metrics were added.
+Next: Phase 3A, establish zero-velocity and training-mean baselines and define
+evaluation metrics.

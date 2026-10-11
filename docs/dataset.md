@@ -343,6 +343,14 @@ sampling and explicit masks/reasons. The --targets option reports 13,070 trainin
 2,775 validation and 2,784 test valid rows, with nine warm-up exclusions each.
 Only fixed early training position/velocity examples are displayed. See
 [methods.md](methods.md) for the denominator amendment and exact policies.
-History windows, normalization, and training remain unimplemented. The data come
-from recorded nonhuman-primate behavior; no human or live closed-loop claim
-follows. Next: Phase 2D, fit count normalization on training data only.
+Phase 2D adds ten-bin causal histories and frozen training-only channel
+normalization. Run uv run --locked python scripts/bin_recording.py --features.
+Raw and normalized training feature tensors are [13070,10,96], paired with
+[13070,2] mm/s labels. Unique valid training count bins fit the scaler once,
+including source warm-up; no held-out values update it. Eleven constant training
+channels remain with scale 1. Only small ignored scaler metadata are saved
+under runs/phase2d/count_scaler.json, with source/split/configuration identities.
+Held-out reporting is limited to eligibility counts/shapes.
+The data come from recorded nonhuman-primate behavior; no human or live
+closed-loop claim follows. Models and scoring remain unimplemented.
+Next: Phase 3A, establish zero-velocity/training-mean baselines and metrics.

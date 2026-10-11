@@ -1050,3 +1050,158 @@ The assistant performed no staging, commit, push, merge or branch switch.
 
 After the understanding and user Git checkpoint, the next increment is
 **Phase 2D: fit count normalization on training data only**.
+
+
+## Phase 2D — causal histories and training-only transforms (2026-10-11)
+
+### Verified starting checkpoint and repository state
+
+Read the private project guide, applicable public progress/methods/dataset notes,
+saved split/configuration and current binning/target implementations. No applicable
+AGENTS.md was found in checked ancestors or affected directories.
+Starting branch main, HEAD 56d16d9 (align cursor velo with neural bins).
+The local origin/main reference also points to 56d16d9; ahead/behind is 0/0.
+This establishes a committed Phase 2C and the locally recorded remote state;
+no network refresh/push/merge was performed or inferred from earlier notes.
+The historical Phase 2C uncommitted status above is superseded by this inspection.
+
+Tracked working tree and index were clean before this increment. The unrelated
+untracked %SystemDrive%/ cache directory was preserved.
+CODEX.md remains untracked via .git/info/exclude; data/raw/, data/processed/ and
+runs/ remain ignored and have no tracked files. The acquired recording and
+bulk outputs were not added to Git. No branch switch or Git mutation was performed.
+
+Reused the existing Python 3.11.17 project environment and locked dependencies.
+No dependency, loader, binning, target-alignment, timing configuration, source
+manifest or split-specification change was needed. Reproduced the Phase 2C
+target audit before implementation, including the existing 13070/2775/2784 valid
+target counts and nine warm-up exclusions in each partition.
+
+### Implemented scope and design
+
+Added src/neurodecode/data/features.py: validated oldest-to-newest ten-bin
+raw histories, explicit source/target IDs and timestamps, [N,10,96] features
+paired with [N,2] mm/s targets, reversible [N,960] C-order flattening, and a frozen
+training-only per-channel scaler. It consumes existing processed structures;
+it does not read or independently align recordings.
+
+All source rows must be consecutive on the exact saved grid and inside one
+retained partition/continuous segment. Warm-up target rows can supply valid
+counts; other quality failures and explicit invalid-bin masks break histories.
+Missing grid bins and segment changes cannot be hidden by adjacent array rows.
+Zero-count bins remain valid. Drop incomplete histories without stitching,
+sorting, interpolation, repair or future lookahead.
+
+Fit population mean/std over unique valid original training count rows once,
+including warm-up source bins, rather than repeated overlapping window entries.
+Replace exact zero training standard deviation with scale 1 while retaining
+the channel. Apply read-only training statistics identically at every lag and
+to every partition; never fit/update from held-out values. Raw counts and
+velocity targets are preserved separately. Intentional offline refitting after
+a change to later training data may change statistics; applying a frozen scaler
+does not update them.
+
+Extended scripts/bin_recording.py with mutually exclusive --features/--targets.
+The feature command reuses the existing source/config/split checks and
+bin/target implementations, prints per-partition eligibility/tensor summaries
+and only the first three chronological training examples.
+Small ignored runs/phase2d/count_scaler.json contains full means/scales, constant
+flags, ordered channels/unit slots, history/flattening conventions, units and
+source/split/configuration/target-policy/implementation identities, plus fit-bin
+and raw-fit-count hashes. Identical reruns are allowed; conflicting metadata
+raise an error without overwriting it. No bulk array persistence/cache was added.
+
+Updated README setup/status and commands, docs/dataset.md status,
+docs/methods.md detailed eligibility/formulas/provenance and the real example,
+and docs/decisions.md the unique-bin fit and offline/frozen causality distinction.
+Added tests/test_features.py; existing tests remain intact.
+
+### Commands actually executed and evidence
+
+From the repository root, using the installed environment and an ignored local
+uv cache:
+
+~~~powershell
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/bin_recording.py --targets
+uv --cache-dir .uv-cache run --locked --no-sync ruff format src/neurodecode/data/features.py tests/test_features.py scripts/bin_recording.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_features.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/bin_recording.py --features
+~~~
+
+Initial focused run passed 21 tests; three further cases brought the final new
+test count to 24. The complete suite passed 125 tests, including 101 retained
+checks and the existing outside-checkout installation/import smoke test.
+Lint passed; all 25 Python files passed formatting; lock consistency passed.
+The feature command ran twice with identical stdout and identical metadata.
+Whitespace/index/ignore checks also passed. No required check remained blocked.
+A fresh environment install was not repeated; --no-sync uses the previously
+verified installed environment.
+
+Synthetic checks cover oldest/newest order and final-target pairing, shapes,
+flatten/inverse order, zero/empty windows, explicit invalid rows, target-quality
+failures, missing grid IDs, segment resets/crossing refusal, retained partition
+ownership, future-count mutation, frozen transformations, held-out changes,
+unique-bin fit versus repeated-window weighting, constant/silent channels,
+source/channel/history identity mismatch, target/timestamp/mapping mismatch,
+explicit invalid-bin fit exclusion and raw-count preservation.
+
+### Actual recording preparation
+
+| Partition | Valid count bins | Valid targets / retained windows | Warm-up excluded | Other invalid windows | Feature shape | Target shape |
+| --- | --- | --- | --- | --- | --- | --- |
+| Training | 13079 | 13070 | 9 | 0 | [13070,10,96] | [13070,2] |
+| Validation | 2784 | 2775 | 9 | 0 | [2775,10,96] | [2775,2] |
+| Test | 2793 | 2784 | 9 | 0 | [2784,10,96] | [2784,2] |
+
+Raw/normalized feature shapes match; flattened shapes are [13070,960],
+[2775,960], [2784,960]. Held-out reporting used aggregate counts/shapes only;
+rules were not tuned from held-out activity or movement patterns.
+
+Scaler fit used all 13079 unique valid training bins once. Eleven constant
+training channels retain scale 1: M1 009, 047, 055, 058, 061, 068, 071, 078,
+079, 082, 096. M1 001 mean=0.12890893799220124 events/bin and
+scale=0.36460280279149737 events/bin.
+
+First real training example: source rows 0–9, end IDs 1–10, segment 0,
+target row 9/end ID 10. Bin ends:
+[1288.020,1288.040,1288.060,1288.080,1288.100,1288.120,1288.140,1288.160,
+1288.180,1288.200] s, with shared starts beginning at 1288.000 s.
+One feature array is [10,96]; its final-bin target is
+[-3.179889172225808,4.54440316637901] mm/s, retaining Phase 2C alignment.
+M1 001 raw history [0,2,1,2,1,1,2,2,1,1] has oldest normalized feature
+(0−0.12890893799220124)/0.36460280279149737 = −0.35355992056352736.
+Negative normalized values mean below training mean, not negative spike counts.
+The first three training histories were inspected by their recorded source
+bin identities/timestamps, with no favorable-example selection.
+
+### Concepts demonstrated, pending understanding and next increment
+
+Explained neural history as recent activity context, [N,L,C] with actual L=10
+and C=96, final-bin label pairing, training-only preprocessing leakage,
+zero observations versus absent/invalid observations, oldest-first flattening,
+unique-bin fitting versus overlap weighting, safe constant-channel handling,
+and offline training fit versus causal application of frozen statistics.
+Synthetic tests demonstrate those implementation properties. Understanding
+check: correctly excluded a bin ending at 1288.220 s from a history for a target
+ending at 1288.200 s because it is future activity. Correctly identified that a
+valid zero-count bin does not break a history. Final-bin target pairing and
+training-only normalization leakage were explained after the initial checks;
+independent explanations of those two concepts remain pending. Oldest-to-newest
+feature order also remains pending independent explanation. Prior demonstrated/
+pending concepts remain as recorded in the Phase 2C learning update.
+
+Checks establish tested preparation logic and recording eligibility, not neural
+predictiveness, physiological alignment, independent overlapping examples,
+noise-free velocity, decoding quality or latency. No target normalization,
+model/baseline training, metrics, replay, dependency installation, data download,
+CI or bulk processed arrays were added.
+
+Phase 2D is locally implemented and verified; its edits remain uncommitted.
+The assistant performed no staging, commit, push, merge or branch switch.
+After review, understanding checks and the user's Git checkpoint, the next
+increment is **Phase 3A: establish zero-velocity and training-mean baselines,
+then define evaluation metrics**.
