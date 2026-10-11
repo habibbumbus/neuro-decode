@@ -69,3 +69,23 @@ application of a frozen scaler. Held-out values never fit/update it.
 Save small ignored fit metadata with source/split/configuration/policy/code and
 fit-row/count hashes. Persist no bulk arrays or models at this checkpoint.
 See [methods](methods.md) for eligibility, formulas, examples and limitations.
+
+
+## 2026-10-11 — Shared baseline validation and undefined R²
+
+Keep Phase 2D eligible examples unchanged and score both trivial predictors on
+the same validation timestamps/mask. Fit mean velocity only from eligible
+training labels; held-out prediction APIs accept label-free metadata.
+Zero/mean baselines need no feature scaler or scientific dependency addition.
+
+Overall RMSE averages squared errors over examples and both axes before the
+square root. Report per-axis R² and their unweighted mean. Constant axes or
+fewer than two scored examples have explicit null R²; mean R² is null if either
+axis is undefined. Reject nonfinite values and mismatched timestamps/masks rather
+than silently repairing scores. The R² reference mean uses scoring labels only
+inside metric calculation, never as a predictor input.
+
+Open validation for development, while final test scoring stays closed.
+Fix the plotted interval to the first eligible ten validation seconds before
+viewing quality; refuse gaps instead of choosing a favorable replacement.
+Save detailed ignored run evidence; commit only the small technical report.

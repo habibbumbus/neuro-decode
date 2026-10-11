@@ -185,20 +185,8 @@ def print_feature_summary(
                 )
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    modes = parser.add_mutually_exclusive_group()
-    modes.add_argument(
-        "--targets",
-        action="store_true",
-        help="Audit aligned targets in all partitions; show training examples only",
-    )
-    modes.add_argument(
-        "--features",
-        action="store_true",
-        help="Build histories and frozen training-only normalization; aggregate held-out audit",
-    )
-    args = parser.parse_args()
+def load_verified_inputs() -> tuple[Recording, dict[str, object], TimingConfig]:
+    """Reuse source/config/split checks; load once without preparing test examples."""
     manifest = json.loads(Path("data/manifest.json").read_text(encoding="utf-8"))
     if len(manifest["recordings"]) != 1:
         raise ValueError("This checkpoint expects exactly one acquired recording")
@@ -244,6 +232,28 @@ def main() -> None:
             raise ValueError(
                 f"Saved split contract disagrees with verified metadata: {key}"
             )
+    return recording, specification, config
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
+        "--targets",
+        action="store_true",
+        help="Audit aligned targets in all partitions; show training examples only",
+    )
+    modes.add_argument(
+        "--features",
+        action="store_true",
+        help="Build histories and frozen training-only normalization; aggregate held-out audit",
+    )
+    args = parser.parse_args()
+    recording, specification, config = load_verified_inputs()
+    acquired = specification["source"]
+    source_sha256 = acquired["sha256"]
+    config_sha256 = specification["configuration"]["sha256"]
+    spec_path = Path("data/splits") / f"{acquired['session']}.json"
     if args.features:
         print_feature_summary(recording, specification, config)
         return

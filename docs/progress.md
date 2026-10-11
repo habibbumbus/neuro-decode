@@ -1205,3 +1205,179 @@ The assistant performed no staging, commit, push, merge or branch switch.
 After review, understanding checks and the user's Git checkpoint, the next
 increment is **Phase 3A: establish zero-velocity and training-mean baselines,
 then define evaluation metrics**.
+
+
+## Phase 3A — trivial velocity predictors and validation metrics (2026-10-11)
+
+### Actual starting checkpoint
+
+Read unchanged private guidance in full, applicable public progress/methods/
+decisions, the saved split/configuration, prepared-window implementation and
+existing tests. No applicable AGENTS.md was found in ancestors/affected paths
+or the repository scan. Starting branch main, commit 249ce68 (build causal
+decoding windows + the train-only transforms). Local origin/main also points to
+that commit, ahead/behind 0/0. This supersedes Phase 2D's historical uncommitted
+status above. No remote refresh was performed, so this is locally recorded push
+state, not a new server check.
+
+Tracked files and index were clean; the unrelated untracked %SystemDrive%/
+cache directory remains preserved. CODEX.md remains excluded via the local
+exclude file and untracked. Raw/processed data and runs/ remain ignored and
+untracked. Recording identity, splits, timing, eligibility and Phase 2D output
+were preserved. No staging, commit, push, merge or branch switch was performed.
+
+Existing environment: Python 3.11.17, NumPy 2.4.6, h5py 3.16.0, Matplotlib 3.11.2,
+with existing pytest/Ruff. No dependency/lockfile, data acquisition, scientific
+preparation or scaler change was needed.
+
+### Implemented and documented
+
+Added models/baselines.py with zero velocity and a frozen training-target mean.
+The minimal models/__init__.py makes that implemented package explicit.
+TrainingMeanVelocity.fit accepts training only; predict accepts label-free
+example metadata. It cannot receive validation labels or update its mean.
+
+Added evaluation.py with explicit indexed [N,2] velocity series and strict shared
+scoring. Exact timestamps, global bin IDs, segment IDs, partition, source/split/
+configuration/policy identity, channel/unit order and masks must agree.
+Malformed lengths/order, nonfinite values or arithmetic overflow fail; no
+sorting, trimming, implicit masking or flattering undefined-score replacements.
+
+Metrics: per-axis RMSE in mm/s; overall RMSE averages squared errors across
+both axes/examples before sqrt; per-axis R²=1−SSE/SST; unweighted mean R².
+Constant axes or fewer than two scored rows give explicit null R²/status.
+Mean R² is null if either axis is undefined. No scored rows is an error.
+Scoring-set means are reference quantities inside the metric, not predictor inputs.
+
+Added scripts/evaluate_baselines.py, reusing the source/config/split verification
+extracted unchanged from scripts/bin_recording.py and existing bin/target/window
+functions. Prepare only train and validation. Fit mean on 13070 eligible training
+targets once, generate both predictions from label-free metadata, then access
+validation targets for scoring. All 2775 eligible validation rows share one
+all-true mask; no additional exclusion or parameter tuning was introduced.
+
+Extended plotting.py for the fixed first eligible ten validation seconds,
+with x/y velocity units, shared time offset, unsmoothed actual derived labels
+and both constant predictions. Refuse gaps, segment changes, masked rows or
+insufficient first-interval coverage; do not search for better-looking movement.
+
+Ignored runs/phase3a-baselines/ contains run.json, metrics.json, predictions.csv
+and validation_velocity.png. Metadata save effective settings, source/full split/
+configuration/policy/code hashes, channel/unit order, frozen mean, eligibility,
+environment, Git commit/dirty state, plotting rule and whole-run duration.
+The base commit was 249ce68 but the new implementation was dirty/uncommitted;
+results must not be attributed to that commit's code alone.
+CPU identifier was unavailable; duration is not an inference-latency measurement.
+
+Updated README, methods and decisions; added the small provenance-verified
+reports/phase3a_baselines.md. Added tests/test_evaluation.py.
+Generated predictions/plots/run metadata remain outside Git.
+
+### Checks actually run
+
+From the repository root:
+
+~~~powershell
+uv --cache-dir .uv-cache run --locked --no-sync python -c "import sys, numpy, matplotlib; print(sys.version); print(numpy.__version__, matplotlib.__version__)"
+uv --cache-dir .uv-cache run --locked --no-sync ruff format src/neurodecode/evaluation.py src/neurodecode/models src/neurodecode/plotting.py scripts/bin_recording.py scripts/evaluate_baselines.py tests/test_evaluation.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_evaluation.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/bin_recording.py
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/evaluate_baselines.py phase3a-baselines
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/evaluate_baselines.py phase3a-repeat
+~~~
+
+All 28 new synthetic tests passed; all 153 tests passed including 125 retained
+checks and the existing outside-checkout import smoke test. Ruff lint passed;
+all 30 Python files passed formatting; lock consistency passed.
+Initial string-escaping parse errors and an import-order issue were corrected
+before final checks and real measurement. The existing training-count command
+still reports [13079,96] and per-channel conservation of 219913 included events.
+
+Synthetic evidence includes hand-computed two-axis/overall metrics, perfect and
+negative R², constant-axis/single-example undefined values, training-only frozen
+means unchanged under validation-label mutation, exact shape/timestamp/order/ID/
+segment/context/mask mismatch failures, nonfinite/overflow rejection, explicit
+shared masks, final-source-bin identity and value-independent fixed plot rules.
+
+Audited exported CSV separately: 2775 finite ordered validation rows, all scored,
+correct target/final source identities and both fixed prediction pairs.
+Independent score recalculation from CSV matched saved metrics. The second run
+produced byte-identical prediction CSV and metrics JSON. An intentional rerun
+using the existing phase3a-baselines directory exited with the expected
+preservation error; original run metadata were unchanged. This is a tested
+refusal, not a blocked acquisition or failed scientific run.
+
+The actual figure was opened and visually reviewed: first interval
+[1550.200,1560.200) s, 500 rows, correctly shared timestamps and mm/s labels.
+Both constant predictions form flat nearly overlapping lines near zero.
+No required verification remains blocked. Fresh installation was not repeated;
+--no-sync uses the previously verified environment.
+
+### Measured validation results and one example
+
+The [validation report](../reports/phase3a_baselines.md) holds source/checksum/
+configuration provenance and full protocol. All scored bin ends run from
+1550.200 to 1605.680 s inclusive (55.480 s timestamp span).
+Training mean from 13070 eligible targets is
+[-0.1479870893879215,0.1386043376635596] mm/s.
+
+| Predictor | RMSE x (mm/s) | RMSE y (mm/s) | Overall RMSE (mm/s) | R² x | R² y | Mean R² |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Zero velocity | 78.418547 | 66.748063 | 72.817486 | −2.097390e−7 | −2.416840e−8 | −1.169537e−7 |
+| Training mean | 78.418755 | 66.748186 | 72.817654 | −5.499573e−6 | −3.690502e−6 | −4.595038e−6 |
+
+At bin end 1550.200 s, ID 13110, actual derived velocity is
+[14.162167438059216,3.7882881059650577] mm/s.
+Zero prediction [0,0] gives signed prediction−target error
+[-14.162167438059216,-3.7882881059650577] mm/s.
+The frozen training-mean pair gives errors
+[-14.310154527447137,-3.649683768301498] mm/s.
+These one-row signed errors are not aggregate RMSE.
+
+These are baseline validation references only. They do not establish neural
+decoding ability, final test performance, human/live control, significance or
+latency. Test target/window construction, predictions, plots and scoring were
+not run in this increment. The common loader reads the source recording as
+before; prior deterministic test eligibility audits remain documented.
+No rule/model/plot interval was selected using test outcomes.
+
+### Learning status and next increment
+
+Explained why complex decoders need simple references; zero versus training
+mean; signed error versus RMSE; per-axis/overall RMSE; R² as squared-error
+comparison with the scoring-set mean, including legitimate negative scores
+and undefined constant-axis cases; validation development versus closed final
+test; label-free prediction versus later scoring-label access.
+Hand example: targets [[0,0],[2,4]], zero predictions give axis RMSE
+[sqrt(2),sqrt(8)], overall sqrt(5), both R²=−1.
+Initial understanding check left training-mean target provenance, negative
+R² and validation/test roles uncertain. Clarified that the mean uses only the
+13070 eligible training targets, separately per axis, then freezes. Negative
+R² describes squared error worse than the scoring-set mean reference, not
+negative correlation. One-axis example: actual [0,2], zero predictions give
+SSE=4 versus mean-reference SSE=2, hence R²=−1. Validation provides development/
+selection feedback; final test scoring stays closed until choices are fixed.
+Understanding follow-up: correctly explained that changing validation
+velocities does not change the frozen training-mean prediction. Prediction
+invariance under validation-label changes is demonstrated; clarified that
+validation scores can still change. Understanding follow-up: correctly explained that negative R² means
+greater squared prediction error than the scoring-set mean reference. This
+interpretation is demonstrated. Understanding follow-up: correctly explained that validation guides tuning
+and the final test set evaluates the model after those choices are fixed.
+Validation versus final test roles are demonstrated. The three checkpoint
+follow-ups now demonstrate frozen training-mean prediction, negative R²
+interpretation and validation/test separation. Independent explanations of
+RMSE aggregation and training-target mean calculation remain pending.
+Phase 2D demonstrated future-bin exclusion and valid zero-count understanding
+remain recorded; its outstanding independent explanations remain pending.
+
+No ridge/other learned model, target scaling, trajectory integration, demo,
+test-score opening, dependency addition, CI or bulk data tracking was added.
+Phase 3A is locally implemented and verified; its changes remain uncommitted.
+The assistant performed no staging, commit, push, merge or branch switch.
+Next increment after understanding/review and the user's Git checkpoint:
+**Phase 3B: fit and validate a ridge-regression decoder on the same examples**.

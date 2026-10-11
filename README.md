@@ -13,8 +13,8 @@ and a source-bound chronological split/timing plan are available. Causal
 20 ms channel counts are implemented and verified on training data.
 Aligned cursor-velocity targets use actual sample elapsed time. Causal ten-bin
 histories and frozen training-only channel normalization are implemented.
-No decoders, scientific results,
-or latency measurements exist yet. This is an independent project that makes no clinical
+Zero/training-mean velocity baselines and shared validation metrics are verified.
+Neural decoders and latency measurements remain planned. This is an independent project that makes no clinical
 claims.
 
 ## Experiment and evaluation plan
@@ -31,7 +31,7 @@ The planned evaluation uses chronological train/validation/test partitions,
 boundary gaps, and training-only preprocessing. Zero and training-mean baselines,
 ridge regression, a linear Gaussian Kalman decoder, and a small unidirectional
 GRU will be compared on the same eligible timestamps using velocity R² and RMSE.
-All models and scientific evaluation remain planned.
+Learned decoders and final test evaluation remain planned.
 
 A later visual replay will compare actual and decoded cursor trajectories,
 with decoded position obtained by integrating predicted velocity from a labeled
@@ -140,6 +140,23 @@ uv run --locked pytest
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 ~~~
+
+## Evaluate trivial velocity baselines on validation
+
+~~~powershell
+uv run --locked python scripts/evaluate_baselines.py phase3a-review
+~~~
+
+Use a new run directory name; existing runs are preserved. This reuses the
+Phase 2D examples, freezes a training-only mean velocity, generates both
+predictions without validation labels as inputs, then scores all 2775 eligible
+validation rows. The test partition is not predicted, plotted or scored.
+
+Ignored run outputs contain effective configuration/provenance, metrics,
+timestamped predictions and a fixed first-ten-second validation velocity plot.
+These are constant baselines, not neural decoders. Overall validation RMSE is
+about 72.82 mm/s for both; full axis scores, provenance and limitations are in
+the [validation report](reports/phase3a_baselines.md). No final test claim follows.
 
 ## Setup
 
@@ -304,6 +321,7 @@ source/version, attribution, license, and verified hashes are documented in the
 units, timing, coverage differences, and unresolved alignment details are
 documented in the dataset card. Chronological partitions and timing are specified in
 [methods](docs/methods.md). Causal counts and aligned velocity labels are
-implemented alongside causal histories and training-only normalization. Model
-evaluation remains unimplemented.
+implemented alongside causal histories and training-only normalization. Validation
+baseline evaluation is implemented; neural decoder fitting and final test
+evaluation remain planned.
 A license for this project's code has not been chosen.

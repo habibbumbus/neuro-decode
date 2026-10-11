@@ -593,3 +593,121 @@ samples, noise-free targets, or latency. Overlapping windows remain correlated.
 No models, target scaling, feature smoothing or evaluation metrics were added.
 Next: Phase 3A, establish zero-velocity and training-mean baselines and define
 evaluation metrics.
+
+
+## Trivial predictors and shared validation evaluation — Phase 3A, October 11, 2026
+
+### Predictor inputs and fixed example protocol
+
+Reuse the existing bin_partition → align_velocity_targets → build_history_windows
+path unchanged for train and validation. The source/configuration/split checks
+from scripts/bin_recording.py are extracted into load_verified_inputs so the
+baseline entry point uses the same verification code. There is no second parser,
+alignment rule or eligibility calculation. The split specification and its
+historical pending-index field remain unchanged; Phase 2D constructs actual IDs.
+
+Training/validation prepared tensors remain [13070,10,96]/[2775,10,96], paired
+with [13070,2]/[2775,2] mm/s labels. Baselines do not use neural values or fit
+feature transforms. Preserve channel/unit order and source/split/configuration/
+target-policy identity even though these trivial predictors ignore features.
+
+Zero velocity emits [0,0] mm/s for every eligible timestamp.
+TrainingMeanVelocity.fit accepts the training HistoryWindows only and takes the
+unweighted two-axis mean over all eligible training targets once per target.
+Its read-only frozen mean is broadcast at validation timestamps. Validation
+predict accepts an ExampleIndex containing timestamps, global bin IDs,
+segment IDs, scoring mask, partition and preparation/channel/unit context,
+with no labels or positions. Changing validation target values cannot refit or
+change predictions. Generate both prediction arrays before accessing validation
+labels for scoring. No held-out velocity is used as a predictor input.
+
+ExampleIndex and VelocitySeries in src/neurodecode/evaluation.py make identities
+explicit. Validate [N,2] velocities, finite [N] timestamps, strictly increasing
+timestamps/global bin IDs, nonnegative ordered segment IDs, channel/unit context
+and boolean scoring mask. Require exact prediction/target timestamps, IDs,
+segment IDs, partition, preparation identity, channel order and scoring masks.
+Never trim, sort, interpolate, silently intersect row lists or round timestamps.
+Prepared target identity must equal the final source bin's identity/time.
+
+All Phase 2D eligible validation rows are scored, with an all-true mask after
+preparation. Any future explicit quality mask must be identical across compared
+models; masks cannot depend on residual magnitude or model success.
+All input velocities must be finite, including unscored rows. Reject nonfinite
+inputs and arithmetic overflow rather than silently dropping observations.
+Zero scored rows are an error.
+
+### Metric definitions and undefined values
+
+For K scored targets y[i,a] and predictions p[i,a], a in {x,y}, in mm/s:
+
+- e[i,a] = p[i,a]−y[i,a].
+- RMSE_a = sqrt(sum_i e[i,a]^2 / K), in mm/s.
+- Overall RMSE = sqrt(sum_i sum_a e[i,a]^2 / (2K)), in mm/s.
+  Equivalently sqrt((RMSE_x^2+RMSE_y^2)/2), not the arithmetic mean of axis RMSE.
+- R²_a = 1−sum_i e[i,a]^2 / sum_i (y[i,a]−mean_i y[i,a])^2.
+- Mean R² = (R²_x+R²_y)/2, unweighted; it is dimensionless.
+
+The scoring-set mean in the R² denominator is an evaluation reference, not a
+predictor input. R²=1 indicates perfect predictions for nonconstant targets;
+R²=0 matches the scoring-set mean reference's squared error. Negative R² means
+worse squared error than that reference, not a forbidden score.
+
+A constant target axis has undefined R², even for a perfect prediction. Return
+None/JSON null and status constant_target; do not fill 1 or 0. Fewer than two
+scored examples gives null with insufficient_scored_examples. If either axis
+is undefined, mean R² is also null; never silently average only the defined axis.
+RMSE remains defined for one finite example and for constant targets.
+
+Hand example: targets [[0,0],[2,4]], zero predictions.
+Axis SSE is [4,16], RMSE is [sqrt(2),sqrt(8)], overall RMSE=sqrt(5).
+Target-axis means [1,2] yield SST [2,8], so both R² values are −1.
+Perfect predictions for nonconstant axes give RMSE=0 and R²=1.
+
+### Validation plot, exports and limits
+
+~~~powershell
+uv run --locked python scripts/evaluate_baselines.py phase3a-review
+~~~
+
+Choose a new run ID under ignored runs/. Existing directories are preserved
+with an error. Save run.json (effective settings, source/full split, configuration
+and code hashes, channel/unit order, mean fit, eligibility, Git commit/dirty state,
+environment, plotting rule and whole-run duration), metrics.json, timestamped
+predictions.csv and validation_velocity.png. The CSV includes actual targets,
+both predictions, exact end IDs/timestamps, partition/segment, scoring mask and
+first/last history IDs. No code/data credentials or absolute recording paths
+are written. Duration covers preparation/scoring/export, not inference latency.
+
+The fixed plot selects [first eligible validation timestamp, +10 s), before
+inspecting label values, currently [1550.200,1560.200) s with 500 rows.
+Reject missing grid IDs, segment changes, masked rows or insufficient coverage
+in that interval; do not seek a better-looking alternative. Both axes share
+the same time offset. Plot unsmoothed derived velocity and constant predictions
+with mm/s labels; flat lines represent values that never change. No trajectory
+integration, interpolation, neural smoothing or signal shifts are added.
+
+Validation is now available for model/metric development. This command never
+constructs test targets/windows, predicts test, displays test or scores test.
+The common loader necessarily reads the acquired recording and verifies global
+coverage metadata as before. Previous deterministic test preparation audits
+are documented; final test performance has not been opened. Freeze the later
+recipe before a separately recorded final test-opening event.
+
+The [Phase 3A validation report](../reports/phase3a_baselines.md) records measured
+scores only after source/configuration/split verification and export auditing.
+All 2775 validation targets span 1550.200–1605.680 s; 13070 training targets fit
+the mean. Predictions are fixed [0,0] and
+[−0.1479870893879215,0.1386043376635596] mm/s. Overall validation RMSE is
+72.81748587747391 / 72.8176536401862 mm/s for zero / training mean respectively.
+Both mean R² values are slightly negative, near zero; these are validation
+references, not final test results or evidence of neural decoding.
+
+Twenty-eight new synthetic tests cover known metrics, perfect/negative/undefined
+R², shared masks, nonfinite/overflow failures, exact shapes/timestamps/IDs/context,
+training-only frozen means, final-bin identity and value-independent plot
+selection with gap refusal. All 153 tests passed, including 125 retained checks,
+plus lint, formatting, lock consistency and the unchanged training count command.
+Exported scores were independently recalculated from CSV; a second run produced
+identical predictions/metrics. The actual figure was visually inspected.
+No additional dependency, learned decoder, ridge fit, CI or demo was added.
+Next: Phase 3B, fit and validate ridge regression on the same eligible examples.

@@ -352,5 +352,8 @@ channels remain with scale 1. Only small ignored scaler metadata are saved
 under runs/phase2d/count_scaler.json, with source/split/configuration identities.
 Held-out reporting is limited to eligibility counts/shapes.
 The data come from recorded nonhuman-primate behavior; no human or live
-closed-loop claim follows. Models and scoring remain unimplemented.
-Next: Phase 3A, establish zero-velocity/training-mean baselines and metrics.
+closed-loop claim follows. Phase 3A adds validation-only zero/training-mean
+velocity references on unchanged Phase 2D examples, with shared RMSE/R² and
+a fixed early validation plot. See the [validation report](../reports/phase3a_baselines.md).
+Neural decoders and final test scoring remain planned.
+Next: Phase 3B, fit and validate ridge regression on the same examples.
