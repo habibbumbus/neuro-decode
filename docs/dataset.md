@@ -357,4 +357,8 @@ velocity references on unchanged Phase 2D examples, with shared RMSE/R² and
 a fixed early validation plot. See the [validation report](../reports/phase3a_baselines.md).
 Phase 3B adds ridge fitting/selection on the same training/validation examples
 and frozen training normalization. See the [ridge validation report](../reports/phase3b_ridge.md).
-Final test scoring remains closed. Next checkpoint: the Kalman decoder.
+Phase 4A fits training-only velocity dynamics and current-bin neural observation
+parameters using these same eligible rows and frozen transforms. All 96 channels
+remain; diagonal observation covariance uses an explicit floor for constant
+channels. See the [fit diagnostics](../reports/phase4a_kalman_fit.md).
+Final test scoring remains closed. Next: Phase 4B causal Kalman filtering.

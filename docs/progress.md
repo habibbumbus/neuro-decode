@@ -1582,3 +1582,199 @@ Phase 3B is locally implemented and verified; its edits remain uncommitted.
 The assistant performed no staging, commit, push, merge or branch switch.
 After review/teach-back and the user's Git checkpoint, next: **the Kalman
 decoder**, retaining these same evaluation timestamps and closed final test.
+
+
+## Phase 4A — Kalman parameter estimation (2026-10-19)
+
+### Verified starting state and interrupted work
+
+Read CODEX.md completely, including sections 15/16, progress, relevant methods/
+decisions and actual preparation/scoring/normalization interfaces. No applicable
+AGENTS.md was found in checked ancestors or affected directories.
+Starting branch main, HEAD c78d413 (train and validate ridge mvmnt decoder).
+Local origin/main matches, ahead/behind 0/0; no network refresh or new push was
+performed. Phase 3B is committed, superseding its historical uncommitted status.
+Its saved validation results reproduce the stated 52.571 mm/s overall RMSE,
+mean R² 0.480 and lambda=1000 across 2775 matched examples.
+
+Tracked files/index were clean before implementation. Preserved the unrelated
+untracked %SystemDrive%/ cache and all earlier outputs. CODEX.md stays locally
+excluded/untracked; raw/processed data and runs/ remain ignored/untracked.
+No staging, commit, push, merge or branch switch was performed.
+
+The task was interrupted during read-only inspection and again after 24 initial
+focused tests passed. On each continuation, inspected actual saved state and
+preserved the existing implementation. Added the remaining current-bin and
+held-out-mutation checks, reaching 27 focused tests. No background fitting run
+or incomplete acquisition was assumed successful.
+
+### Concepts explained before implementation
+
+State s_t=[vx,vy] is completed-bin velocity in mm/s; observation z_t contains the
+96 current-bin channel counts under the existing frozen training transform.
+Transition A/a relates previous velocity to current velocity. H/d relates
+velocity to expected neural activity. Q measures transition residual uncertainty;
+R measures neural observation residual uncertainty. Explained that training
+labels can fit these relationships but held-out filtering must use its own
+previous estimate and measured neural activity, reserving held-out labels for
+scoring. Example A=0.9I, a=0 maps previous [10,−4] to [9,−3.6].
+
+Discussed current-bin observations versus ridge's concatenated 10-bin features,
+explicit gaps/validity, covariance singularity/floors, diagonal R's ignored
+cross-channel correlations, and training-derived initialization.
+These concepts were explained before implementation; follow-up understanding
+is recorded below.
+Prior baseline/causal-window/ridge demonstrations remain recorded without
+claiming independent mastery of all matrix mathematics.
+
+### Implementation and fixed policies
+
+Added only:
+- configs/kalman.toml: current-bin standardized observation, diagonal R, fixed
+  absolute/relative covariance floors, no held-out tuning.
+- src/neurodecode/models/kalman.py: label-free indexed current observations,
+  guarded training transition pairs, centered NumPy affine least squares for
+  A/a/H/d, residual Q/R, training mean/covariance prior, explicit covariance
+  diagnostics and parameter-only JSON saving. No filtering/update/predict loop.
+- scripts/fit_kalman.py: reuse load_verified_inputs, prepare_partition,
+  fit_count_scaler/restored frozen metadata and existing target/index contracts;
+  fit training only, print/save parameter evidence and provenance.
+- tests/test_kalman.py: focused synthetic/system and real-pipeline-shaped checks.
+- reports/phase4a_kalman_fit.md plus README/dataset/methods/decisions/progress:
+  actual fitted diagnostics, equations, assumptions, commands and limits.
+
+No existing binning, alignment, windowing, normalization, ridge, scoring,
+split/base configuration or source manifest was changed. No dependencies,
+downloads, UI, CI, replay or filtering loop were added.
+
+A [2,2], a [2], H [96,2], d [96], Q [2,2], R [96,96].
+Observations select the final bin from the established normalized histories.
+Training eligibility still uses the shared ten-bin support/quality rules;
+it does not create zero states for unavailable labels.
+
+Transitions require matching training partition/masks, consecutive original grid
+IDs, shared bin edges and same session/segment. Reject nonfinite/mismatched
+inputs; never sort, trim or stitch filtered rows. Fit on current/previous valid
+training velocities only. Observation regression uses matched valid training
+velocities and current-bin observations. Require rank-two centered state
+predictors and sufficient samples. Use library lstsq, never explicit inversion.
+
+Residual population covariance divides by fit-row count M (ddof=0).
+Keep full Q; use diagonal R while retaining/reporting its raw full covariance
+singularity and discarded correlations. For Q/P0 floor =
+max(1e-6,1e-8*mean diagonal) in (mm/s)^2; add only required diagonal jitter.
+For R floor raw variances at max(1e-8,1e-8*mean raw variances).
+Report symmetry, finite checks, eigenvalues, numerical rank, undefined singular
+condition and every adjustment. Policies were fixed before actual fitting.
+
+Training initial prior uses eligible training velocity mean and population
+covariance. Saved future reset policy applies it before the first eligible
+observation with no extra transition, at each session/partition/segment or
+eligibility discontinuity. No held-out behavioral initialization is allowed.
+The policy is saved; execution belongs to Phase 4B.
+
+### Checks actually run
+
+From the repository root using the existing installed environment:
+
+~~~powershell
+uv --cache-dir .uv-cache run --locked --no-sync python -c "import sys,numpy,scipy; print(sys.version); print(numpy.__version__,scipy.__version__)"
+uv --cache-dir .uv-cache run --locked --no-sync ruff format src/neurodecode/models/kalman.py scripts/fit_kalman.py tests/test_kalman.py
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_kalman.py --tb=short -x
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider --tb=short
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/fit_kalman.py phase4a-kalman-fit
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/fit_kalman.py phase4a-kalman-repeat
+~~~
+
+All 27 focused tests passed; all 210 tests passed including 183 retained checks
+and the existing outside-checkout installation/import smoke test.
+Lint passed; all 38 Python files passed format checks; lock consistency passed.
+No fresh temporary environment install was repeated; no required check remains
+blocked. No dependency resolution/install was needed.
+
+Synthetic evidence covers known two-dimensional linear-system parameter
+recovery, current-bin extraction against original count row identities,
+label-free observation construction, missing/invalid/segment/session transition
+breaks, held-out partition rejection, exact target/observation mask/context
+pairing, rank/length errors, finite/PSD covariance validation, silent channels
+and reported floors, near-zero residual full-state floors, training-only
+initial prior and exclusive parameter saving. Changing synthetic raw validation
+or test spike/movement values leaves all fitted training parameters and
+normalization unchanged. Synthetic results are not reported as recording
+performance.
+
+Repeated real fitting produced byte-identical kalman_parameters.json and
+diagnostics.json. Intentionally rerunning an existing run ID exited with the
+expected preservation error and left the original run.json unchanged.
+That refusal is a tested protection, not a blocked fit.
+
+### Actual recording fit and diagnostics
+
+Source remains Indy indy_20161005_06, Zenodo 583331 v1,
+SHA-256 4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac.
+Existing source/split/configuration checks passed. Restored Phase 2D normalization
+exactly matches the training-only verification, fingerprint
+603aa299f0a1d75625acea41a18b9ecf56c58e4e0515ec8322ea1aa34abe68dd.
+
+- 13070 eligible training observation/state rows, times 1288.200–1549.580 s.
+- 13069 consecutive transitions; first global IDs [10,11], last [13078,13079].
+- No further invalid adjacency inside the already eligible rows. The original
+  nine warm-up target exclusions remain.
+- A/a and H/d regression predictor ranks are both two. All matrices are finite.
+- A approximately [[0.97372105,−0.02813544],[0.02892290,0.98708227]].
+- a approximately [0.00896779,0.00130489] mm/s.
+- A spectral radius 0.9807938374, reported without clipping/projecting dynamics.
+- Q approximately [[294.48813862,−83.23653226],[−83.23653226,179.32344868]]
+  (mm/s)^2. Eigenvalues [135.692915,338.118672]; zero added jitter.
+- Raw full R has rank 85/96, minimum eigenvalue −4.23e-16 within roundoff
+  tolerance 4.98e-12, and undefined/null condition number.
+- Diagonal R has 11 explicitly floored variances, all channels retained:
+  M1 009,047,055,058,061,068,071,078,079,082,096. Their H rows/d entries are zero.
+- Final R eigenvalues [1e-8,1.0006791874], condition about 1.00068e8.
+  Discarded off-diagonal residual covariance norm 6.8843393535.
+- Training initial mean [-0.1479870893879215,0.1386043376635596] mm/s.
+- Initial covariance approximately
+  [[6710.62694022,−922.01599566],[−922.01599566,5143.35981698]] (mm/s)^2;
+  eigenvalues [4716.954100,7137.032657], zero jitter.
+- All final covariances symmetric (max absolute asymmetry zero) and positive
+  definite. R conditioning remains a numerical consideration for Phase 4B.
+
+Artifacts are under ignored runs/phase4a-kalman-fit and its repeat directory:
+explicit fitted matrices/frozen transform/prior policy, diagnostics and full
+run/configuration/source/split/channel/code/environment/Git provenance.
+Base commit was c78d413 but implementation was dirty/uncommitted during fitting.
+No observation/residual arrays, predictions or decoded-velocity scores were saved.
+Whole fitting-run duration is not inference latency.
+
+### Limits, pending understanding and next increment
+
+No validation/test targets/windows, Kalman predictions, plots or scoring were
+constructed. The common loader still reads the acquired recording/global
+metadata as before; earlier deterministic test audits remain documented.
+Ridge's existing validation report remains unchanged; no Kalman comparison is
+claimed yet.
+
+Fitted residual covariances also reflect noisy velocity labels, unmodeled
+movement and linear/Gaussian approximation error. Diagonal R ignores measurable
+cross-channel correlations. Positive definite matrices and synthetic parameter
+recovery do not establish decoding accuracy, stable numerical filtering,
+stationary noise, physiological alignment or live-control performance.
+R's large condition number and all innovation/Joseph/reset behavior require
+verification in Phase 4B; no covariance floor was tuned from held-out scores.
+
+Understanding follow-up: correctly explained A as mapping previous velocity to
+expected current velocity, H as mapping current velocity to 96 expected neural
+observations, and R as the covariance of neural observation errors. Recognized
+that using validation movement labels as filter inputs would leak information.
+Clarified that validation labels may guide model selection and score predictions,
+but cannot drive the filter; final test scoring remains reserved until development
+choices are fixed. These high-level distinctions are demonstrated. Independent
+explanations of Q, the initial-state policy and covariance mathematics remain
+pending. Phase 4A is locally implemented and verified; edits are
+uncommitted. The assistant performed no staging, commit, push, merge or branch
+switch. Next after review/teach-back and the user's Git checkpoint:
+**Phase 4B — implement causal Kalman predict/update filtering and compare
+validation results against ridge and both trivial baselines**.

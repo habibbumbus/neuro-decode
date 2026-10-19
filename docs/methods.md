@@ -845,3 +845,163 @@ Overlapping histories are correlated; validation selection can overfit with
 repeated experimentation, and this one-session result has no final test,
 physiological alignment, cross-session or live-control guarantee.
 Next checkpoint: the Kalman decoder.
+
+
+## Kalman parameter estimation — Phase 4A, October 19, 2026
+
+### State, observation and timing
+
+Use two-dimensional state s_t=[vx,vy] in mm/s. It represents the existing
+completed-bin derived velocity, with the actual selected behavioral-sample
+denominator from Phase 2C. State times remain the 20 ms global bin-end grid;
+behavioral source intervals can differ slightly from the nominal bin width.
+No target redefinition, forecast horizon, additional lag or timing shift is added.
+
+The observation z_t has C=96 channel values from the current bin (t−20 ms,t].
+Reuse the existing frozen training per-channel count standardization.
+current_bin_observations calls FrozenCountScaler.transform on the existing
+HistoryWindows and selects its final bin, preserving all channel/unit order
+and exact timestamps. It does not read movement labels. Raw counts are preserved.
+Its output is [N,96], rather than the ridge [N,960] history representation.
+The same Phase 2D history/quality eligibility determines available fitting rows;
+prefix warm-up or unavailable targets do not become fabricated zero states.
+
+Use the column-vector models:
+
+s_t = A s_(t−1) + a + w_t, w_t modeled with mean zero and covariance Q.
+z_t = H s_t + d + epsilon_t, epsilon_t modeled with mean zero and covariance R.
+
+A is [2,2], a [2], H [96,2], d [96], Q [2,2], R [96,96].
+A maps previous velocity into expected current velocity. H maps velocity into
+expected neural activity; later filtering will use measured activity to infer
+velocity. a is in mm/s; d is in standardized-count units. Q is in (mm/s)^2,
+R in standardized-count squared units. H coefficients therefore have units of
+standardized count per mm/s. These are channel observations, not single neurons.
+
+For intuition, A=0.9I and a=0 turn previous velocity [10,−4] into [9,−3.6].
+Q expresses uncertainty left after that movement prediction; R expresses
+uncertainty in observations left after accounting for velocity. They are
+covariances, not velocity estimates or learned neural features.
+
+### Exact row and transition eligibility
+
+The command reuses load_verified_inputs and prepare_partition for training
+only, with the same source checksum, split/configuration checks, target
+construction, validity and channel policies. Fit-count normalization uses the
+same unique valid training bins as before. Restore the existing Phase 2D
+metadata when available and verify its core fingerprint against a fresh
+training-only fit; refuse disagreement. No validation/test transform fitting.
+
+CurrentBinObservations retains label-free ExampleIndex, exact original bin
+starts/ends/global IDs, row session identities, origin/width and transform hash.
+The matching VelocitySeries is supplied only to training parameter estimation.
+Reject shape/nonfinite/context/normalization/timestamp/mask mismatches using
+the existing identity checks; both inputs must describe the same rows.
+Reject non-training partitions. Do not silently intersect, trim or sort.
+
+Fit transitions only between adjacent original rows when:
+
+- Both rows' shared validity/scoring mask is true.
+- Their global bin IDs differ by exactly one.
+- Previous bin end equals current bin start on the unchanged exact grid.
+- Session and continuous-segment identities match.
+
+Never first filter rows and then treat remaining neighbors as consecutive.
+Missing grid bins, invalid rows, purge/split boundaries and session/segment
+changes break the chain. Every observation must match origin+k*width and its
+saved left edge exactly. The transition represents one 20 ms grid step only;
+it is not rescaled to bridge missing time. Nonfinite values fail, even outside
+an explicit mask, consistently with the existing prepared/scoring contract.
+
+Real preparation provides 13070 eligible training states/observations and
+13069 eligible transitions, with no further adjacency exclusion. First pair
+global end IDs [10,11], last [13078,13079]. Training target times are
+1288.200–1549.580 s. The original nine prefix warm-up target exclusions remain.
+
+### Regression and residual covariance estimation
+
+Fit A/a using previous/current eligible training velocities. Fit H/d using all
+valid aligned training state/observation rows. Center predictor and response
+columns, call NumPy linalg.lstsq(rcond=None), then reconstruct the intercept.
+This uses a library least-squares solver without explicit matrix inversion.
+The fitted row-oriented coefficient is transposed into the stated A/H
+column-state convention. At least four observations/transitions and rank-two
+centered velocity predictors are required; insufficient or rank-deficient
+state information fails clearly rather than discarding a velocity dimension.
+See [NumPy least squares](https://numpy.org/doc/2.4/reference/generated/numpy.linalg.lstsq.html).
+
+Compute residuals w=s_current−(A*s_previous+a) and
+epsilon=z−(H*s+d). Estimate centered population covariances E_centered.T @
+E_centered / M (ddof=0), where M is the corresponding valid fit-row count.
+This is a fitted residual estimate with no degrees-of-freedom correction.
+Symmetrize for roundoff. Retain raw covariance eigenvalue/rank diagnostics.
+
+Use fixed configs/kalman.toml rules, without validation/test tuning:
+
+- For full Q and initial-state covariance, floor =
+  max(1e-6 (mm/s)^2,1e-8*mean(diagonal)). Add max(0,floor−minimum eigenvalue)
+  to each diagonal. Report the exact added jitter; do not project A.
+- For R, use diagonal raw residual variances and floor each at
+  max(1e-8,1e-8*mean(raw variances)), in standardized-count squared units.
+  Keep all channels. This deliberately omits cross-channel residual covariance.
+- Diagnose the full raw R too, reporting singularity, discarded off-diagonal
+  norm and which channels were floored; a zero/silent channel is not missing data.
+- Reject nonfinite covariances, asymmetry or materially negative eigenvalues.
+  Roundoff tolerance is 32*machine_epsilon*dimension*max(1,max_abs_eigenvalue).
+  Report numerical rank with that threshold and undefined/null condition number
+  for singular matrices. Final covariances must be strictly positive definite.
+
+The real Q eigenvalues are [135.692915,338.118672] (mm/s)^2, with no jitter.
+Raw full R has rank 85/96 and minimum eigenvalue −4.23e-16, within tolerance.
+Diagonal R retains all 96 channels; 11 constant channels receive variance 1e-8.
+Final R eigenvalues span [1e-8,1.0006791874]; condition number is about 1e8.
+This conditioning is disclosed and needs numerical filter checks in Phase 4B.
+Q/R do not quantify pure biological or hardware noise: noisy labels, linear
+model mismatch and unmodeled activity contribute to the fitted residuals.
+
+### Training-derived prior and saved evidence
+
+Save initial mean m0 as the eligible training velocity mean, and P0 as its
+population covariance with the same full-state floor policy.
+Here m0=[−0.1479870893879215,0.1386043376635596] mm/s.
+P0 eigenvalues [4716.954100,7137.032657] (mm/s)^2 need no jitter.
+
+The initial-state policy for Phase 4B is a prior at the first eligible bin
+before its observation, with no extra transition at that first bin.
+Reuse m0/P0 at every session/partition/segment start or eligibility
+discontinuity. Do not carry state across excluded time or initialize from
+held-out movement. Later temporal memory will differ from ridge's bounded
+ten-bin history while comparison timestamps/masks remain common.
+
+Fitting uses training movement labels to learn dynamics and the neural
+observation relationship. Held-out filtering will accept neural observations
+and its own previous estimate; held-out movement labels will be scoring
+references only. Training-label-conditioned regressions/residual diagnostics
+are not held-out decoding predictions.
+
+~~~powershell
+uv run --locked python scripts/fit_kalman.py phase4a-review
+~~~
+
+Choose a new ignored run directory. Save kalman_parameters.json with A/a/H/d,
+Q/R, m0/P0, state/observation units, full frozen transform/channel/source/split
+identity, fitting configuration, fit-pair hashes, diagnostics and initialization/
+reset policy. diagnostics.json and run.json record source/full split, exact
+configuration/code/artifact hashes, environment, commit/dirty status and
+whole fitting-run duration. Existing runs are refused without overwrite.
+No observation arrays, residual series, validation/test outputs or filter
+state are persisted. Duration is not inference latency.
+
+All 210 tests pass, including 27 new synthetic checks. They cover known
+linear-dynamical parameter recovery, current-bin versus history selection,
+gaps/sessions/invalid rows, rejection of held-out partitions and mismatched
+identities, raw held-out mutation invariance of training fits/normalization,
+silent channels, singular/invalid covariances, full-state floors and prior/
+artifact policies. Lint/format/lock checks pass. Repeated real fitting gives
+identical parameter and diagnostic files. See the [fit report](../reports/phase4a_kalman_fit.md).
+
+No filtering loop, validation/test Kalman scores, parameter search, new
+dependency, neural preprocessing, alternate split or target definition was
+added. Linear stationary/Gaussian, diagonal-observation-noise and one-step
+state assumptions remain approximations. Next: Phase 4B causal predict/update
+filtering and validation comparison against ridge and both trivial baselines.

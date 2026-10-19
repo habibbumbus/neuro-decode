@@ -14,8 +14,9 @@ and a source-bound chronological split/timing plan are available. Causal
 Aligned cursor-velocity targets use actual sample elapsed time. Causal ten-bin
 histories and frozen training-only channel normalization are implemented.
 Zero/training-mean velocity baselines and shared validation metrics are verified.
-Ridge regression is fitted and selected on validation; Kalman/GRU decoders,
-final test evaluation and latency measurements remain planned. This independent
+Ridge regression is fitted and selected on validation. Kalman transition and
+neural observation parameters are fitted on training data; its filtering loop,
+GRU, final test evaluation and latency measurements remain planned. This independent
 project makes no clinical claims.
 
 ## Experiment and evaluation plan
@@ -32,8 +33,8 @@ The planned evaluation uses chronological train/validation/test partitions,
 boundary gaps, and training-only preprocessing. Zero and training-mean baselines,
 ridge regression, a linear Gaussian Kalman decoder, and a small unidirectional
 GRU will be compared on the same eligible timestamps using velocity R² and RMSE.
-Ridge validation results are available; Kalman/GRU and final test evaluation
-remain planned.
+Ridge validation results and training-only Kalman parameter diagnostics are
+available. Kalman filtering, GRU and final test evaluation remain planned.
 
 A later visual replay will compare actual and decoded cursor trajectories,
 with decoded position obtained by integrating predicted velocity from a labeled
@@ -183,6 +184,29 @@ Ignored run outputs include explicit JSON model parameters/frozen transform,
 effective configuration and identities, timestamped predictions, scores and
 the same fixed first-ten-second validation plot. Save/load prediction equality
 is checked. Existing runs are preserved.
+
+## Fit Kalman parameters on training data
+
+~~~powershell
+uv run --locked python scripts/fit_kalman.py phase4a-review
+~~~
+
+Use a new run name. This reuses verified preparation and the frozen training
+transform, fitting two-dimensional velocity dynamics and a current-bin
+96-channel neural observation model. Only valid consecutive training pairs
+within a session/segment contribute transitions. No filtering or Kalman
+validation/test predictions are produced.
+
+The verified fit uses 13070 observation/state rows and 13069 transitions.
+All matrices are finite; Q and the training initial covariance need no jitter.
+Diagonal R retains all channels and floors 11 constant-channel variances at
+1e-8. Its condition number is about 1e8; numerical filter behavior remains
+unverified. See the [parameter diagnostics](reports/phase4a_kalman_fit.md)
+and [methods](docs/methods.md) for the assumptions and precise rules.
+
+Ignored run outputs contain fitted matrices, the training-derived prior and
+reset policy, configuration/identities, covariance diagnostics and provenance.
+The next checkpoint implements causal predict/update filtering.
 
 ## Setup
 
@@ -348,6 +372,7 @@ units, timing, coverage differences, and unresolved alignment details are
 documented in the dataset card. Chronological partitions and timing are specified in
 [methods](docs/methods.md). Causal counts and aligned velocity labels are
 implemented alongside causal histories and training-only normalization. Validation
-baseline evaluation and ridge fitting/selection are implemented. Kalman/GRU
-and final test evaluation remain planned.
+baseline evaluation and ridge fitting/selection are implemented, together with
+training-only Kalman parameter diagnostics. Kalman filtering, GRU and final
+test evaluation remain planned.
 A license for this project's code has not been chosen.

@@ -1,0 +1,7 @@
+# Phase 4A: training parameter estimation only, no filtering or tuning.
+[kalman_fit]
+observation = "standardized_current_bin"
+observation_covariance = "diagonal"
+state_variance_floor_mm2_s2 = 1e-6
+observation_variance_floor = 1e-8
+relative_variance_floor = 1e-8

@@ -108,3 +108,24 @@ source/split identity, with strict loading/context checks and no pickle.
 Reuse the baseline plotting interval and exporter; preserve old artifacts.
 Selected lambda=1000 beats both trivial validation baselines, with no detected
 defect requiring a diagnostic increment. Continue next with the Kalman decoder.
+
+
+## 2026-10-19 — Kalman parameter estimation and covariance policy
+
+Use state [vx,vy], current-bin observations from all 96 channels, and the existing
+frozen training-only count standardization. Keep Phase 2D row eligibility and
+source identities. Fit A/a only on consecutive valid training grid pairs within
+the same session/segment; fit H/d on matched valid training observations/states.
+Use centered NumPy least squares, requiring two identifiable velocity axes.
+
+Use population residual covariances (ddof=0). Retain full Q; use diagonal R as
+the initial approximation and keep every channel. Record the full raw residual
+R's singularity/correlation diagnostics. Apply the predeclared absolute/relative
+variance floors only as documented in methods, reporting exact adjustments.
+Do not tune floors from held-out performance or silently project A.
+
+Use training velocity mean/population covariance for the future initial prior.
+Reset this prior at each eligible run start, before its first observation,
+with no extra transition or held-out behavioral initialization.
+Save parameters/configuration/identities and diagnostics now. Filtering,
+filter-state handling in code and validation comparison are Phase 4B.
