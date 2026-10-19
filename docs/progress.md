@@ -1778,3 +1778,180 @@ uncommitted. The assistant performed no staging, commit, push, merge or branch
 switch. Next after review/teach-back and the user's Git checkpoint:
 **Phase 4B — implement causal Kalman predict/update filtering and compare
 validation results against ridge and both trivial baselines**.
+
+
+## Phase 4B — causal Kalman filtering and validation (2026-10-19)
+
+### Verified starting state
+
+Read the local project contract, including sections 15/16, relevant progress,
+methods/decisions, actual Kalman fit/diagnostics/artifact, shared Phase 3 scoring,
+ridge/baseline interfaces and preparation code. No applicable AGENTS.md was found
+in checked ancestors or repository directories. Branch main; starting HEAD
+4e64fe7647e66db96e0b7a1ce3b7607a51834910 (fit kalman mvmnt and neural observation
+models), matching local origin/main. Phase 4A is committed, superseding the
+previous historical uncommitted note. No network refresh was performed; matching
+local refs are not an independent check of the current server state.
+
+The tracked working tree/index were clean. Preserved the unrelated untracked
+%SystemDrive%/ cache and all previous run artifacts. CODEX.md remains excluded
+through the local info/exclude rule and untracked; raw/processed data and runs/
+remain ignored/untracked. Read-only Git inspection required a per-command
+safe.directory override in this helper environment; no persistent Git config
+change, staging, commit, push, merge or branch switch was performed.
+
+### Teaching and fixed choices before results
+
+Explained predict → current-bin neural observation → innovation → gain/update.
+Worked scalar example: predicted velocity 8 mm/s, predicted variance 4,
+observation 10, observation variance 1 gives innovation 2, gain 0.8, updated
+velocity 9.6 and posterior variance 0.8. Connected this illustration to the
+actual two-state, 96-channel system: A/Q [2,2], H [96,2], R/S [96,96],
+innovation [96], gain [2,96]. Real observations are standardized counts,
+not direct velocity measurements. No movement label enters held-out filtering.
+
+Retained the saved first-bin training prior before observation with no extra
+transition. Retained common nine-bin warm-up exclusions and declared zero extra
+Kalman settling exclusions before seeing results. Invalid/missing bins break the
+chain; the next eligible row resets. Genuine zero counts are valid observations.
+A lower-level prediction-only missing-observation step is tested separately;
+it is not used to carry state across excluded time in this comparison.
+
+Previously demonstrated: A maps previous velocity to expected current velocity,
+H maps velocity to expected neural observations, R describes neural observation
+residual errors, and held-out label inputs would leak information. Validation
+labels may guide selection/score development predictions; final test remains
+reserved. Current innovation/gain, Q-versus-R trust and reset-policy teach-back
+remain pending; an explanation is not recorded as independent mastery.
+
+### Implemented files
+
+- src/neurodecode/models/kalman.py: strict existing-format parameter load,
+  numerical predict/update, Joseph covariance, label-free partition filtering,
+  gap/session/segment/invalid-row resets and indexed status/covariance diagnostics.
+- scripts/evaluate_kalman.py: verify frozen Kalman/ridge artifact bytes/context,
+  reuse shared validation preparation/scaler/scoring, compare four predictors,
+  independent posterior-equation audit, save run/configuration/provenance,
+  timestamped predictions, indexed covariance/status and first two step traces.
+- scripts/evaluate_baselines.py: extend existing CSV predictor-name mapping to
+  Kalman; unchanged evaluation and row export contract.
+- src/neurodecode/plotting.py: extend existing fixed-interval plot to four distinct
+  predictor styles; unchanged selection, timestamps, units and target display.
+- tests/test_kalman_filter.py: 24 focused synthetic checks.
+- reports/phase4b_kalman.md: measured matched validation table, trace, diagnosis,
+  provenance and limits. README/dataset/methods/decisions/progress document
+  reproduction and policies. No changes to raw data, split, count/target/history preparation,
+  fitted parameters, normalizer, ridge selection, metric definitions or dependencies.
+
+### Commands actually run and evidence
+
+After inspecting repository/ignored-file state, used the installed environment:
+
+~~~powershell
+uv --cache-dir .uv-cache run --locked --no-sync ruff format src/neurodecode/models/kalman.py tests/test_kalman_filter.py scripts/evaluate_kalman.py scripts/evaluate_baselines.py src/neurodecode/plotting.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_kalman_filter.py tests/test_kalman.py --tb=short -x
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/evaluate_kalman.py phase4b-kalman-validation
+uv --cache-dir .uv-cache run --locked --no-sync ruff format scripts/evaluate_kalman.py
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/evaluate_kalman.py phase4b-kalman-audited
+uv --cache-dir .uv-cache run --locked --no-sync ruff format tests/test_kalman_filter.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_kalman_filter.py --tb=short -x
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider --tb=short
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+~~~
+
+Initial combined fitting/filtering tests: 49 passed. Added nonsquare-H numerical
+and prepared-window label-free checks; final focused filtering tests: 24 passed.
+Final full suite: 234 passed (210 retained plus 24 new); Ruff lint and formatting
+passed (42 files in this environment); offline lock consistency passed.
+No new dependency install, fresh environment setup, dataset acquisition or test
+partition preparation was needed. No required check remains blocked.
+
+Tests prove hand-calculated prediction/update/Joseph arithmetic, sensible synthetic
+state estimation and uncertainty reduction, finite symmetric positive covariance,
+nonsquare channel/state dimensions, prediction-only None versus real zero input,
+future-bin causality, gap/invalid/session/segment resets and partition-call
+isolation. Save/load predictions/covariances match exactly; incompatible model
+policy, channel/transform/grid/order/nonfinite inputs fail. Changing validation
+labels changes scores but cannot change filtering; even NaN labels in a prepared
+window are ignored by the observation/filter path. Real recordings stay out of tests.
+
+### Actual matched validation results
+
+Loaded exactly the existing Phase 4A fitted artifact, SHA-256
+5b907ca94f805a7d244c903b9fd26470271a3fb723100dcd59dbb05297884507.
+Its copied output is byte-identical. Normalizer fingerprint remains
+603aa299f0a1d75625acea41a18b9ecf56c58e4e0515ec8322ea1aa34abe68dd.
+Source/split/base configuration and target policy remain unchanged.
+
+All four predictors score the same 2775 examples, target ends
+1550.200–1605.680 s inclusive, 55.480 s span, one initial reset and no invalid
+rows/additional settling exclusions. Original Phase 3B target/zero/mean/ridge
+CSV values, timestamps, segment/partition/masks match exactly. Eligible index
+SHA-256 remains 30446619fcf5a2d49ada8bff99ac8616247a255e13a68a7c4b1836171c9875c1.
+
+| Predictor | RMSE x | RMSE y | Overall RMSE (mm/s) | R² x | R² y | Mean R² |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Zero velocity | 78.418547 | 66.748063 | 72.817486 | -2.097390e-7 | -2.416840e-8 | -1.169537e-7 |
+| Training mean | 78.418755 | 66.748186 | 72.817654 | -5.499573e-6 | -3.690502e-6 | -4.595038e-6 |
+| Ridge, lambda=1000 | 56.844212 | 47.919052 | 52.571380 | 0.474546 | 0.484606 | 0.479576 |
+| Kalman | 93.653913 | 111.267523 | 102.838507 | -0.426311 | -1.778814 | -1.102563 |
+
+Kalman underperforms all references. The audited run is under ignored
+runs/phase4b-kalman-audited. Its prediction/plot/parameter/status/covariance bytes
+match the initial verification run; the audit adds diagnostic metadata only.
+run.json records base commit 4e64fe7 with dirty implementation, exact code hashes,
+source/split/channel/transform/model identities, configuration and environment.
+These are validation development results, not final-test scores or latency evidence.
+
+Full numerical audit: all posterior estimates finite; covariance asymmetry zero,
+minimum posterior eigenvalue 1324.911074 (mm/s)^2, max relative S solve residual
+5.39388e-16. Independent two-state posterior equations agree on every row to
+1.13687e-13 mm/s in mean and 1.81899e-12 in covariance. No numerical repair or
+post-score parameter change. Silent channels have zero H rows and zero gains in
+the saved first two traces; all channels remain retained.
+
+Fixed plot [1550.200,1560.200), 500 samples, was generated and visually inspected;
+all four styles, units and source interval are correct. Zero/mean lines nearly
+overlap. Kalman misses reversals and shows sustained y bias: full-validation
+mean vy=-28.738074 versus actual 0.010377 mm/s. The report traces ordinary bin
+13111, (1550.200,1550.220], from prior [-0.604059,-6.107763], through the full
+96-entry innovation and [2,96] gain, to [-28.666149,-40.008431] mm/s.
+Scoring-only target [5.260395,-6.174894] is not an inference input.
+
+### Limits and next increment
+
+No specific correctness defect was revealed by synthetic tests, frozen-reference
+identity checks, matrix/covariance audits or equivalent posterior equations.
+Stationary linear velocity dynamics, current-bin linear/Gaussian observations,
+temporal noise independence and diagonal R are plausible model limitations;
+the precise cause of poor decoding is unresolved. No tuning sweep, label-based
+correction, extra exclusion, lag adjustment or favorable clip search was attempted.
+Stable covariance arithmetic does not establish accurate or calibrated decoding.
+
+No test targets/windows, predictions, plots or scores were constructed. As before,
+the common loader reads the recording/global metadata; prior deterministic audits
+remain in the historical log. No GRU, replay/demo, trajectory integration,
+robustness sweep, CI or latency benchmark was added. CODEX.md and bulk outputs
+remain untracked/ignored; final staging/diff checks are read-only. Phase 4B is
+locally implemented and verified, with changes uncommitted and understanding
+understanding follow-up recorded below. The user runs the next Git checkpoint.
+
+Understanding follow-up: recognized validation as an assessment reference.
+Clarified that validation also supports model selection, while true validation
+velocity cannot initialize or correct the filter without leaking the answer.
+Independent explanations of Q versus R and innovation were not yet demonstrated.
+Re-explained Q as transition residual uncertainty and R as neural observation
+residual uncertainty. Innovation is measured neural activity minus activity
+expected from the predicted velocity, not a velocity error against a movement
+label. A simplified observation of 5 versus an expectation of 3 gives innovation
+2 in observation units. Follow-up correctly identified that less reliable neural
+observations require larger R and calculated innovation 7 minus 4 as 3.
+These basic observation-uncertainty and innovation distinctions are demonstrated.
+Independent explanation of Q and how the gain balances both uncertainties remains
+pending; full matrix-level understanding is not claimed.
+
+Next increment: **Phase 5A — a small causal GRU using the same prepared examples
+and evaluation contract**; a specific correctness issue would take priority if
+new evidence reveals one.

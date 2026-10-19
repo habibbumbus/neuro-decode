@@ -244,9 +244,9 @@ def save_baseline_velocity_figure(
     figure = Figure(figsize=(12, 6), layout="constrained")
     FigureCanvasAgg(figure)
     axes = figure.subplots(2, 1, sharex=True)
-    styles = (("#d95f02", "--"), ("#16803b", ":"), ("#b52b2d", "-"))
+    styles = (("#d95f02", "--"), ("#16803b", ":"), ("#b52b2d", "-"), ("#7b3fb2", "-"))
     if not 1 <= len(predictions) <= len(styles):
-        raise ValueError("Expected one to three validation predictors")
+        raise ValueError("Expected one to four validation predictors")
     for axis, name in enumerate(("x", "y")):
         axes[axis].plot(
             time,

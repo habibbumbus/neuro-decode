@@ -46,7 +46,12 @@ def write_predictions(
     predictions: dict[str, VelocitySeries],
 ) -> None:
     """Shared timestamped export; the same strict scorer validates all pairing."""
-    prefixes = {"Zero velocity": "zero", "Training mean": "mean", "Ridge": "ridge"}
+    prefixes = {
+        "Zero velocity": "zero",
+        "Training mean": "mean",
+        "Ridge": "ridge",
+        "Kalman": "kalman",
+    }
     for prediction in predictions.values():
         evaluate_velocity(labels, prediction)
     index = labels.index

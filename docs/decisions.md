@@ -129,3 +129,21 @@ Reset this prior at each eligible run start, before its first observation,
 with no extra transition or held-out behavioral initialization.
 Save parameters/configuration/identities and diagnostics now. Filtering,
 filter-state handling in code and validation comparison are Phase 4B.
+
+
+## 2026-10-19 — Causal Kalman filtering and unchanged validation comparison
+
+Load the unchanged Phase 4A parameters/transform and selected Phase 3B ridge.
+Use numerical solves and Joseph covariance updates, with roundoff symmetrization
+and no adaptive covariance tuning. Start/reset from the training prior before
+the first eligible observation; no extra transition or held-out velocity input.
+Skip invalid rows, reset after discontinuities, and preserve the original shared
+nine-bin warm-up exclusions without additional Kalman settling exclusions.
+A low-level missing-observation prediction-only step is tested but is not used
+to carry state across invalid time in this comparison.
+
+Score all four models on the original 2775 validation rows and first ten-second
+plot interval. Kalman underperforms ridge and both baselines; preserve that result.
+Independent posterior equations and identity checks reveal no specific correctness
+defect. Keep model assumptions as possible limitations rather than silently
+retuning Q/R or shifting signals. Next: the causal GRU; final test stays closed.

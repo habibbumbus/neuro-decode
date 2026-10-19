@@ -15,9 +15,9 @@ Aligned cursor-velocity targets use actual sample elapsed time. Causal ten-bin
 histories and frozen training-only channel normalization are implemented.
 Zero/training-mean velocity baselines and shared validation metrics are verified.
 Ridge regression is fitted and selected on validation. Kalman transition and
-neural observation parameters are fitted on training data; its filtering loop,
-GRU, final test evaluation and latency measurements remain planned. This independent
-project makes no clinical claims.
+neural observation parameters are fitted on training data, and causal filtering
+is evaluated on validation. GRU, final test evaluation and latency measurements
+remain planned. This independent project makes no clinical claims.
 
 ## Experiment and evaluation plan
 
@@ -33,8 +33,11 @@ The planned evaluation uses chronological train/validation/test partitions,
 boundary gaps, and training-only preprocessing. Zero and training-mean baselines,
 ridge regression, a linear Gaussian Kalman decoder, and a small unidirectional
 GRU will be compared on the same eligible timestamps using velocity R² and RMSE.
-Ridge validation results and training-only Kalman parameter diagnostics are
-available. Kalman filtering, GRU and final test evaluation remain planned.
+Matched validation results are available: ridge overall RMSE 52.571 mm/s,
+Kalman 102.839 mm/s, versus about 72.817 mm/s for both trivial baselines.
+Kalman underperforms; these are development results, not final test performance.
+See the [comparison report](reports/phase4b_kalman.md). GRU and final test
+evaluation remain planned.
 
 A later visual replay will compare actual and decoded cursor trajectories,
 with decoded position obtained by integrating predicted velocity from a labeled
@@ -200,13 +203,29 @@ validation/test predictions are produced.
 The verified fit uses 13070 observation/state rows and 13069 transitions.
 All matrices are finite; Q and the training initial covariance need no jitter.
 Diagonal R retains all channels and floors 11 constant-channel variances at
-1e-8. Its condition number is about 1e8; numerical filter behavior remains
-unverified. See the [parameter diagnostics](reports/phase4a_kalman_fit.md)
+1e-8. Its condition number is about 1e8; Phase 4B checks numerical filtering
+below. See the [parameter diagnostics](reports/phase4a_kalman_fit.md)
 and [methods](docs/methods.md) for the assumptions and precise rules.
 
 Ignored run outputs contain fitted matrices, the training-derived prior and
 reset policy, configuration/identities, covariance diagnostics and provenance.
-The next checkpoint implements causal predict/update filtering.
+The evaluation command below reuses these frozen parameters.
+
+## Evaluate the frozen Kalman filter
+
+~~~powershell
+uv run --locked python scripts/evaluate_kalman.py phase4b-review
+~~~
+
+This loads the existing Phase 4A Kalman and selected Phase 3B ridge artifacts,
+uses the same prepared validation rows and training-fitted scaler, and saves
+four-model metrics, predictions, reset/covariance diagnostics and a fixed ten-second
+plot under ignored runs/phase4b-review/. A new run ID preserves earlier output.
+Default fitted runs are runs/phase4a-kalman-fit and runs/phase3b-ridge; optional
+--kalman-run and --ridge-run arguments select equivalent saved local runs.
+If these artifacts are absent in a new checkout, run the documented training
+commands first. No held-out labels enter the filter, and test scoring stays closed.
+See [methods](docs/methods.md) for reset/warm-up and missing-bin policies.
 
 ## Setup
 
@@ -373,6 +392,6 @@ documented in the dataset card. Chronological partitions and timing are specifie
 [methods](docs/methods.md). Causal counts and aligned velocity labels are
 implemented alongside causal histories and training-only normalization. Validation
 baseline evaluation and ridge fitting/selection are implemented, together with
-training-only Kalman parameter diagnostics. Kalman filtering, GRU and final
-test evaluation remain planned.
+training-only Kalman parameter diagnostics and causal validation filtering. GRU
+and final test evaluation remain planned.
 A license for this project's code has not been chosen.

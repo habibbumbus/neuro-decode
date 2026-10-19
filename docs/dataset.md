@@ -361,4 +361,8 @@ Phase 4A fits training-only velocity dynamics and current-bin neural observation
 parameters using these same eligible rows and frozen transforms. All 96 channels
 remain; diagonal observation covariance uses an explicit floor for constant
 channels. See the [fit diagnostics](../reports/phase4a_kalman_fit.md).
-Final test scoring remains closed. Next: Phase 4B causal Kalman filtering.
+Phase 4B adds causal Kalman filtering on the same eligible validation rows.
+It underperforms ridge and both trivial baselines; see the matched
+[validation comparison](../reports/phase4b_kalman.md). Source bytes and all
+preparation policies are unchanged. Final test scoring remains closed; the
+next increment is the causal GRU.

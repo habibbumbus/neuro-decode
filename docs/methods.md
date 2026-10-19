@@ -1005,3 +1005,132 @@ dependency, neural preprocessing, alternate split or target definition was
 added. Linear stationary/Gaussian, diagonal-observation-noise and one-step
 state assumptions remain approximations. Next: Phase 4B causal predict/update
 filtering and validation comparison against ridge and both trivial baselines.
+
+
+## Causal Kalman filtering — Phase 4B (2026-10-19)
+
+Reuse the exact Phase 4A A [2,2], a [2], H [96,2], d [96], Q [2,2],
+R [96,96], training mean/covariance prior and frozen observation scaler.
+No refit, covariance tuning, channel deletion, new lag or alternative data path.
+The observation z_t is the standardized count vector for the current completed
+20 ms bin, extracted from the final source bin of the existing prepared window.
+All raw histories remain available and unchanged.
+
+### Prediction, innovation and update
+
+For a contiguous eligible bin after the first update, use column-state equations:
+
+- Predicted velocity m_minus = A @ m_previous + a.
+- Predicted covariance P_minus = A @ P_previous @ A.T + Q.
+- Innovation r = z_t - (H @ m_minus + d), shape [96].
+- Innovation covariance S = H @ P_minus @ H.T + R, shape [96,96].
+- Cross covariance B = P_minus @ H.T, shape [2,96].
+- Gain K = solve(S, B.T).T, shape [2,96].
+- Updated velocity m = m_minus + K @ r, shape [2], in mm/s.
+- Joseph covariance P = (I-KH) @ P_minus @ (I-KH).T + K @ R @ K.T.
+
+Use [NumPy's numerical linear solve](https://numpy.org/doc/2.4/reference/generated/numpy.linalg.solve.html)
+without constructing an inverse. Validate finite states/observations and symmetric
+positive-semidefinite covariances with the established roundoff tolerance.
+Symmetrize P_minus, S and P for roundoff; do not clip eigenvalues, add adaptive
+jitter, change fitted floors or silently repair a failed solve. The Joseph form
+avoids the cancellation in a direct covariance subtraction. Covariance describes
+the fitted model's uncertainty, not a demonstrated calibration guarantee.
+
+One-axis illustration, using an identity observation model only for teaching:
+previous velocity 8 mm/s, covariance 3; A=1,a=0,Q=1 predicts 8 with variance 4.
+Observation 10 with R=1 gives innovation 2, gain 4/(4+1)=0.8, updated velocity
+9.6 and variance 0.8. Real observations are 96 standardized channel counts,
+not direct velocity measurements. Q adds uncertainty to motion prediction;
+R describes observation residual uncertainty and influences neural correction.
+
+### Initialization, timing, warm-up and missingness
+
+Each call filters exactly one ordered partition and starts fresh. At its first
+eligible bin, use the training prior m0/P0 directly and perform the measurement
+update, with no additional A/Q transition. Reuse this prior after session or
+segment changes, missing grid IDs, nonshared edges or explicitly invalid rows.
+No state crosses partitions, purge gaps or discontinuities. Reject unordered
+rows and grid/channel/unit/source/split/transform mismatches; never sort or trim.
+
+Keep Phase 2D's nine prefix warm-up exclusions for a ten-bin history; begin
+Kalman filtering at the first common eligible row, without processing its nine
+unscored history bins as extra Kalman updates. Add zero Kalman-specific settling
+exclusions. Score the reset bin too. After a discontinuity the prepared windows
+already require complete support; the filter additionally resets at the next
+eligible row. Kalman can remember earlier eligible estimates within the segment,
+whereas ridge uses bounded ten-bin histories; identical score times do not imply
+identical temporal memory.
+
+The current observation is used only after its bin closes. Prediction timestamps
+are bin ends, indicating earliest availability before unmeasured computation
+delay, not a wall-clock latency measurement or future movement forecast.
+Held-out velocity/position values never initialize, correct or enter filtering.
+Preparation's fixed label-quality metadata still determines shared eligibility;
+movement values are accessed for scoring after all predictions are generated.
+
+A genuine zero raw count vector is valid and must be standardized normally;
+it is neither a missing packet nor necessarily zero after standardization.
+Under this checkpoint's batch contract, an explicit invalid row produces no
+emitted estimate and breaks the chain. Its finite training-prior placeholders
+are masked and labeled not_emitted_invalid, never counted as decoded values.
+Missing rows on the grid also force a reset at the next eligible observation.
+Malformed nonfinite arrays fail rather than becoming implicit missingness.
+The lower-level kalman_step(..., observation=None) implements and tests a
+prediction-only mathematical step, but this comparison does not propagate that
+state across missing/invalid time. A future robustness packet-loss experiment
+needs its own explicit policy rather than quietly changing this contract.
+
+### Frozen loading, comparison and evidence
+
+KalmanParameters.load checks the existing JSON schema, units, training-only
+prior/reset policy, covariance validity and full transform hash/identity.
+No pickle, refit or behavioral initialization is used. Save/load predictions
+and covariances are bit-identical. The evaluation command checks the Phase 4A
+artifact hash against its run metadata, and requires its source/full split,
+timing/configuration and training mean to agree with the loaded context.
+Load the already selected Phase 3B ridge artifact with the same scaler;
+no lambda selection is repeated. The training-mean baseline reuses m0, whose
+fit population is the same eligible training targets.
+
+~~~powershell
+uv run --locked python scripts/evaluate_kalman.py phase4b-review
+~~~
+
+Default model runs are runs/phase4a-kalman-fit and runs/phase3b-ridge;
+--kalman-run and --ridge-run may point to equivalent saved local artifacts.
+Choose a new output run ID; existing directories are refused. Detailed evidence
+is in runs/phase4b-kalman-audited: model copy, timestamped four-model predictions,
+filter reset/status CSV, indexed posterior covariance NPZ, metrics and run JSON.
+Metadata includes model/transform/source/split/channel/configuration identities,
+first two complete step traces, package versions, CPU/thread policy, Git commit
+and dirty state, implementation/artifact hashes. Runtime is whole-run duration,
+not inference latency. All these generated outputs remain ignored.
+
+Score all 2775 original eligible validation rows, 1550.200–1605.680 s inclusive,
+using unchanged Phase 3A per-axis/overall RMSE and R² functions and common mask.
+Require every original Phase 3B target, zero/mean/ridge prediction, timestamp,
+segment, partition and mask to match the saved CSV exactly. Keep the fixed first
+10 s plot [1550.200,1560.200), 500 samples, no smoothing or interval search.
+Test targets/windows, predictions, plots and metrics are not constructed.
+The common source loader still reads the recording/global metadata as before.
+
+Kalman validation overall RMSE is 102.838507 mm/s, mean R² -1.102563;
+ridge remains 52.571380 and 0.479576. Both baselines are about 72.8175 mm/s.
+Kalman underperforms all three; no post-result change was made to Q/R,
+splits, lag, channels, transform, eligibility or warm-up. Full axis scores and
+provenance are in the [Phase 4B report](../reports/phase4b_kalman.md).
+
+Numerical audit independently solves the equivalent two-state posterior precision
+equations for every emitted bin. Maximum mean difference is 1.13687e-13 mm/s,
+maximum covariance difference 1.81899e-12. All posterior covariances are symmetric
+and positive definite; minimum eigenvalue 1324.911074 (mm/s)^2. Maximum relative
+S*K.T solve residual is 5.39388e-16. Eleven silent-channel H rows and gains are
+zero, so their small R floors do not provide movement evidence.
+The fixed plot shows missed reversals and sustained y bias: validation mean
+predicted vy=-28.738074 versus label mean 0.010377 mm/s. These observations and
+synthetic tests reveal no specific correctness defect. Stationary linear dynamics,
+current-bin linear/Gaussian observations, temporally independent residuals and
+diagonal R remain possible model limitations, not proven causes of the poor score.
+No assumption was tuned away using validation, and no final-test claim is made.
+Next increment: a small causal GRU, retaining the common preparation/evaluation.
