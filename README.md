@@ -16,8 +16,9 @@ histories and frozen training-only channel normalization are implemented.
 Zero/training-mean velocity baselines and shared validation metrics are verified.
 Ridge regression is fitted and selected on validation. Kalman transition and
 neural observation parameters are fitted on training data, and causal filtering
-is evaluated on validation. GRU, final test evaluation and latency measurements
-remain planned. This independent project makes no clinical claims.
+is evaluated on validation. GRU components are implemented and verified with
+synthetic data only; real-recording GRU training, final test evaluation and latency
+measurements remain planned. This independent project makes no clinical claims.
 
 ## Experiment and evaluation plan
 
@@ -36,8 +37,8 @@ GRU will be compared on the same eligible timestamps using velocity R² and RMSE
 Matched validation results are available: ridge overall RMSE 52.571 mm/s,
 Kalman 102.839 mm/s, versus about 72.817 mm/s for both trivial baselines.
 Kalman underperforms; these are development results, not final test performance.
-See the [comparison report](reports/phase4b_kalman.md). GRU and final test
-evaluation remain planned.
+See the [comparison report](reports/phase4b_kalman.md). GRU scientific training
+and final test evaluation remain planned.
 
 A later visual replay will compare actual and decoded cursor trajectories,
 with decoded position obtained by integrating predicted velocity from a labeled
@@ -227,6 +228,26 @@ If these artifacts are absent in a new checkout, run the documented training
 commands first. No held-out labels enter the filter, and test scoring stays closed.
 See [methods](docs/methods.md) for reset/warm-up and missing-bin policies.
 
+
+## Verify GRU components with synthetic data only
+
+~~~powershell
+uv sync --locked
+uv run --locked python scripts/check_gru.py phase5a-review
+uv run --locked pytest tests/test_gru.py
+~~~
+
+The locked setup installs CPU PyTorch on Windows/Linux; macOS uses PyPI.
+The implemented model is one unidirectional GRU with 32 hidden values and a
+linear two-velocity head (12546 parameters for 96 channels). Each independent
+10-bin window starts from zero hidden state; later replay must use this same rule.
+The training components provide MSE, Adam, gradient clipping and best-validation
+snapshot selection. The command exercises them on a tiny synthetic mapping,
+without loading the recording. Synthetic memorization is not scientific accuracy.
+Checkpoint and verification metadata stay under ignored runs/phase5a-review/;
+use a new run ID to preserve earlier outputs. See [methods](docs/methods.md).
+Real-recording GRU experiments are deferred to Phase 5B.
+
 ## Setup
 
 Python 3.11 is the supported compatibility target for this checkpoint;
@@ -392,6 +413,7 @@ documented in the dataset card. Chronological partitions and timing are specifie
 [methods](docs/methods.md). Causal counts and aligned velocity labels are
 implemented alongside causal histories and training-only normalization. Validation
 baseline evaluation and ridge fitting/selection are implemented, together with
-training-only Kalman parameter diagnostics and causal validation filtering. GRU
-and final test evaluation remain planned.
+training-only Kalman parameter diagnostics and causal validation filtering.
+GRU components pass synthetic-only checks; real GRU training and final test
+evaluation remain planned.
 A license for this project's code has not been chosen.

@@ -147,3 +147,18 @@ plot interval. Kalman underperforms ridge and both baselines; preserve that resu
 Independent posterior equations and identity checks reveal no specific correctness
 defect. Keep model assumptions as possible limitations rather than silently
 retuning Q/R or shifting signals. Next: the causal GRU; final test stays closed.
+
+
+## 2026-10-19 — Bounded-window GRU components before recording training
+
+The read-only Kalman artifact diagnosis found bias/excess spread and disclosed
+conditioning, but no concrete correctness defect; keep the fitted model unchanged.
+Implement one CPU float32, unidirectional GRU (H=32) plus a two-output linear head.
+Reuse prepared histories/scaler/identities; initialize hidden state to zero for
+each window, including later replay, rather than carrying state across windows.
+Use seeded Adam/MSE with clipping, chronological validation and earliest best-RMSE
+snapshot selection. Save explicit identity-bound tensors/metadata. Use uv's CPU
+PyTorch index on Windows/Linux and PyPI fallback on macOS.
+Phase 5A verifies synthetic mechanics only. Its overfit fixture deliberately
+copies examples for validation wiring and makes no generalization claim.
+Real-data candidate declarations, training and matched comparison are Phase 5B.

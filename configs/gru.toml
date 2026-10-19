@@ -1,0 +1,16 @@
+# Phase 5A component defaults; not a real-data experiment declaration.
+[gru]
+hidden_size = 32
+
+[training]
+seed = 2026
+batch_size = 256
+max_epochs = 50
+learning_rate = 0.001
+weight_decay = 0.0
+adam_beta1 = 0.9
+adam_beta2 = 0.999
+adam_epsilon = 1e-8
+gradient_clip_norm = 1.0
+patience = 8
+minimum_improvement_mm_s = 0.0

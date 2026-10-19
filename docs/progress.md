@@ -1935,7 +1935,7 @@ the common loader reads the recording/global metadata; prior deterministic audit
 remain in the historical log. No GRU, replay/demo, trajectory integration,
 robustness sweep, CI or latency benchmark was added. CODEX.md and bulk outputs
 remain untracked/ignored; final staging/diff checks are read-only. Phase 4B is
-locally implemented and verified, with changes uncommitted and understanding
+locally implemented and verified, with changes uncommitted and
 understanding follow-up recorded below. The user runs the next Git checkpoint.
 
 Understanding follow-up: recognized validation as an assessment reference.
@@ -1955,3 +1955,182 @@ pending; full matrix-level understanding is not claimed.
 Next increment: **Phase 5A — a small causal GRU using the same prepared examples
 and evaluation contract**; a specific correctness issue would take priority if
 new evidence reveals one.
+
+
+## Phase 5A — bounded-window GRU and synthetic training checks (2026-10-19)
+
+### Verified starting state and scope
+
+Read CODEX.md including sections 15/16, current progress/methods/decisions,
+Phase 4B report and saved validation artifacts, Phase 2D windows/scaler and
+shared Phase 3 evaluation interfaces. No applicable AGENTS.md was found in
+checked ancestors or repository directories. Starting branch main, HEAD 9dd8430
+(decode movement with causal kalman filtering), matching local origin/main.
+Phase 4B is committed, superseding its earlier uncommitted note. No server
+refresh/push was performed; local tracking references alone are not a fresh
+remote verification. Tracked tree/index were clean; unrelated untracked
+%SystemDrive%/ cache and every previous artifact were preserved.
+CODEX.md stays locally excluded/untracked; recordings, processed data and runs/
+remain ignored/untracked. No staging, commit, push, merge or branch switch.
+
+### Brief read-only Kalman diagnosis
+
+Read existing Phase 4A training prior/fit and Phase 4B validation CSV, covariance
+NPZ and first two full gain traces, verifying recorded artifact hashes first.
+No raw recording reprocessing, new Kalman inference, fitting, tuning or test access.
+
+Mean prediction-minus-label bias x/y (mm/s): zero [-0.035914,-0.010377],
+training mean [-0.183901,0.128228], ridge [4.948505,-1.968098],
+Kalman [-1.991768,-28.748450]. Population prediction spreads: zero [0,0],
+training mean approximately [0,0], ridge [54.473187,51.032669],
+Kalman [88.849973,106.632138]. Validation label mean/spread:
+[0.035914,0.010377] / [78.418539,66.748062]. Saved training label prior mean/spread:
+[-0.147987,0.138604] / [81.918416,71.717221]. Training Kalman prediction
+bias/spread are unavailable in existing artifacts; no training scores invented.
+
+Q condition 2.491793, P0 1.513060, posterior covariance 1.703811–2.466351.
+Full R/S condition numbers are about 1e8, but for diagnostic inspection only,
+the 85 nonzero-H channel block has R condition 1.031401 and first-two S
+conditions 1.273965/1.223279. Eleven zero-H/gain channels explain the small
+floored directions; no channels were removed from actual filtering.
+First-two gain Frobenius norms 37.872807/33.031266, max entries 9.089302/8.285794,
+row norms [26.294132,27.257441]/[23.583738,23.127296]. Units are mm/s per
+standardized observation; gains above one are not automatically invalid.
+Only two complete traces exist, not a distribution over all steps.
+
+Numerical concern is disclosed separately from observed bias/excess spread.
+The prior all-row independent audit and 51 retained Kalman tests still pass;
+no concrete correctness defect found. Stationary dynamics, observation model
+mismatch and diagonal/temporal noise assumptions remain hypotheses, not established
+causes. Appended observations to the existing Kalman report without a separate
+checkpoint or parameter change. Scientific validation scores remain unchanged.
+
+### Concepts explained before implementation
+
+Order of neural bins distinguishes rising from falling/rearranged activity.
+Hidden state temporarily summarizes one window, whereas learned weights/biases
+are shared rules and stay fixed at inference. Explained update-gate memory blend
+and reset-gate contribution to the candidate, with PyTorch's actual convention.
+Fresh zero hidden state per independent history prevents undeclared information
+from earlier windows; the learned reset gate is a different operation.
+Overlapping windows share source data/weights but recompute independent state.
+
+Actual shapes: [10,96] → batched [1,10,96], zero h0 [1,1,32], recurrent outputs
+[1,10,32], final hidden [1,1,32], head input [1,32], velocity [1,2] mm/s.
+No future bins or persistent state. Explained MSE, gradient-based weight updates,
+Adam, clipping gradients rather than output velocities, eval/inference mode,
+and validation selecting snapshots without supplying inputs or gradients.
+These GRU concepts are explained; independent teach-back remains pending.
+Previously demonstrated R reliability, simple innovation arithmetic, causal
+windows and baseline/ridge distinctions remain recorded without claiming full
+matrix/recurrent-model mastery. Q/gain reasoning remains pending.
+
+### Implemented and dependency workflow
+
+- pyproject.toml/uv.lock: add torch through uv; explicit CPU index on Windows/Linux,
+  PyPI fallback on macOS. Installed torch 2.14.1+cpu; no CUDA build or GPU required.
+  Added only torch and its runtime dependencies; previous scientific packages
+  were not upgraded. No torchvision/torchaudio, dataset download or future model.
+- configs/gru.toml: H=32 and explicit optimizer/seed/batch/epoch/clipping/patience
+  component defaults. These are not a real-data candidate declaration.
+- src/neurodecode/models/gru.py: label-free [N,L,C] adapter using the existing
+  scaler/index; single-layer GRU/final-hidden linear head; zero h0 per window;
+  eval predictions; identity-bound exclusive CPU tensor/metadata save/load.
+- src/neurodecode/training.py: minimal train/validation pairing, seeded CPU Adam,
+  MSE, finite-gradient clipping, shared validation metrics, strict earliest-best
+  RMSE selection, patience stopping and cloned best-weight restoration. Restores
+  caller CPU RNG/thread/determinism settings. No generic training framework.
+- scripts/check_gru.py: synthetic-only shape/overfit/round-trip command, no loader
+  import. Generated checkpoint/provenance remain under ignored runs/.
+- tests/test_gru.py: 26 focused synthetic checks.
+- README/methods/decisions/progress: architecture, shapes, fixed reset/timing,
+  training/persistence/setup rules, evidence/limits and next increment.
+- Existing reports/phase4b_kalman.md: the artifact-only diagnosis above.
+
+Defaults: seed 2026, batch 256, epochs 50, lr 0.001, weight decay 0,
+Adam betas 0.9/0.999, epsilon 1e-8, global gradient norm cap 1, patience 8,
+strict improvement threshold 0 mm/s. Train only on training labels; validation
+only scores/selects snapshots, never fits the scaler or enters forward/backward.
+Independent-window batching may permute training windows while preserving
+oldest-to-newest bin order inside each one. CPU float32; labels stay unscaled.
+Checkpoint records architecture/order/reset/dimensions, full frozen transform,
+channel/unit/source/split identities, seed/configuration/history/selection and
+package versions. Strict weights_only loading rejects incompatible context or
+parameter shapes/dtypes/nonfinite values and returns eval mode. No hidden state
+is saved and optimizer resume is not implemented.
+
+### Commands actually run and outcomes
+
+~~~powershell
+uv --version
+.venv\Scripts\python.exe --version
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_kalman_filter.py tests/test_kalman.py --tb=short
+uv --cache-dir .uv-cache lock
+uv --cache-dir .uv-cache sync --locked
+uv --cache-dir .uv-cache run --locked --no-sync python -c "import torch; print(torch.__version__); print(torch.version.cuda); print(torch.cuda.is_available())"
+uv --cache-dir .uv-cache run --locked --no-sync ruff format src/neurodecode/models/gru.py src/neurodecode/training.py
+uv --cache-dir .uv-cache run --locked --no-sync ruff format tests/test_gru.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_gru.py --tb=short -x
+uv --cache-dir .uv-cache run --locked --no-sync ruff format scripts/check_gru.py
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/check_gru.py phase5a-gru-synthetic
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider --tb=short
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+~~~
+
+Initial lock/sync network attempts failed with sandbox socket error 10013.
+Reran both through the permission mechanism successfully; actual uv generated
+the lockfile and installed the packages. No hand-written lockfile or second
+dependency workflow. uv 0.12.23, Python 3.11.17, torch 2.14.1+cpu;
+CUDA build None and availability False. Windows CPU only was executed; no claim
+of fresh-clone/cross-platform reproduction. Existing package import smoke test
+remains part of the full suite. No required check remains blocked.
+
+51 retained Kalman tests passed before implementation. All 26 new GRU tests
+passed; full suite 260 passed (234 retained plus 26 new). Ruff lint/format
+passed (46 Python files in this environment); offline lock consistency passed.
+Tests cover actual [10,96]/H32 shapes and parameter count, a hand-controlled
+sequence-order example, fresh zero state/batch/call independence, finite gradients
+and clipping, one Adam update, tiny synthetic overfit, exact same-input eval/save-
+load agreement, seed repeatability/caller-runtime restoration, one-epoch validation-
+label mutation invariance of weights/transforms, earliest-best snapshot and patience,
+channel/transform/source/reset/dimension mismatches, nonfinite checkpoint weights,
+label-free adapters, discontinuities and target/partition pairing failures.
+
+Synthetic command: histories [16,10,96], parameter count 12546, 250 smoke epochs,
+best epoch 250. Toy training RMSE 4.1294006986371153e-7 in the example label units
+(mm/s by convention), exact checkpoint round-trip predictions. Toy labels use
+oldest and final-bin counts. Later-timestamp copied examples deliberately exercise
+validation/checkpoint wiring for memorization, not independent generalization.
+Smoke overrides lr=0.02, batch=16, epochs/patience=250; not real-data settings.
+One synthetic forward output [0.600000024,-0.000000477] accompanies the saved
+shape trace. No scientific claim is made from these values.
+
+Ignored runs/phase5a-gru-synthetic/gru.pt and run.json record synthetic identity,
+fixture seed 53/training seed 2026, configuration/history, code/checkpoint hashes,
+Git base 9dd8430 and dirty implementation, environment and whole-run duration.
+No real recording loader is imported or invoked by this command. No real GRU
+training/validation/test data or scores were generated. Existing Kalman/ridge/
+baseline artifacts are preserved. Whole smoke-run duration is not latency.
+
+### Limits and next increment
+
+Synthetic success establishes tested mechanics and training-path capability,
+not neural decoding quality, real-data convergence, calibrated uncertainty,
+robustness, live control or performance against ridge. No GRU hyperparameter
+selection on the recording, continuous hidden-state inference, cursor demo,
+trajectory integration, robustness sweep, latency benchmark or CI was added.
+No test partition was inspected. Existing source/data/evaluation contracts
+remain unchanged. Phase 5A changes are locally implemented and verified but
+uncommitted. Understanding follow-up: correctly identified that hidden state
+changes while reading inputs during inference, while learned weights stay fixed.
+Correctly explained that carrying state between windows would add information
+beyond the declared ten-bin input. Identified gradients as the quantity limited
+by gradient clipping; clarified that the global gradient norm is capped before
+the optimizer step, rather than clipping predicted velocities. These high-level
+distinctions are demonstrated. Independent gate reasoning and the detailed
+backpropagation/optimization mechanism remain pending. The user runs Git.
+Next: **Phase 5B — predeclare a small set of real-training configurations,
+train only on the training partition and compare on unchanged validation rows**
+against ridge, Kalman and both trivial baselines. Keep final test closed.

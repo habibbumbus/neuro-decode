@@ -136,3 +136,47 @@ the common loader still reads source/global metadata as previously documented.
 No GRU, replay, trajectory integration, robustness sweep or latency benchmark.
 Next increment: the causal GRU; underperformance alone is not a demonstrated
 implementation error requiring a corrective checkpoint.
+
+
+## Read-only follow-up before Phase 5A (2026-10-19)
+
+Read only existing Phase 4A training fit/prior and Phase 4B validation artifacts;
+verified saved artifact hashes before reading their CSV/NPZ/traces. No recording
+reprocessing, test access, refit or parameter tuning. Bias is mean(prediction
+minus target); spread is population standard deviation (ddof=0), in mm/s over
+all 2775 common validation examples.
+
+| Validation series | Bias x | Bias y | Spread x | Spread y |
+| --- | ---: | ---: | ---: | ---: |
+| zero | -0.035914 | -0.010377 | 0.000000 | 0.000000 |
+| mean | -0.183901 | 0.128228 | 0.000000 | 0.000000 |
+| ridge | 4.948505 | -1.968098 | 54.473187 | 51.032669 |
+| kalman | -1.991768 | -28.748450 | 88.849973 | 106.632138 |
+
+Validation label mean is [0.035914,0.010377], spread [78.418539,66.748062].
+Training label mean from the saved prior is [-0.147987,0.138604], spread
+[81.918416,71.717221]; its covariance needed no jitter. These are training label
+statistics. Training Kalman prediction bias/spread are not saved and remain
+unavailable; no training scores were manufactured. Constant predictor spread
+has only floating-point residue.
+
+Q condition is 2.491793, prior covariance 1.513060, posterior covariance
+conditions 1.703811–2.466351. R condition is 1.00068e8; first two innovation
+system conditions are 1.23647e8/1.18728e8. For diagnosis only, the 85 nonzero-H
+rows have R condition 1.031401 and innovation-block conditions 1.273965/1.223279.
+The eleven zero-H rows have zero gain and floored R. Actual filtering retains
+all 96 channels. Large full-system conditioning is worth disclosing but is not
+by itself evidence for the cause of the poor score.
+
+First/second gain Frobenius norms are 37.872807/33.031266; maximum absolute
+entries 9.089302/8.285794. Row norms [26.294132,27.257441] and
+[23.583738,23.127296] convert standardized neural residuals to mm/s; gains above
+one are not inherently invalid. Innovation products give corrections
+[-0.659730,-6.303953] and [-28.062090,-33.900668] mm/s. Only two full gain traces
+are saved, so no all-gain distribution is claimed. The existing all-row solve
+residual and independent posterior audit remain the stronger numerical checks.
+
+Large y bias and excessive spread are observed. Linear stationary dynamics,
+diagonal/cross-time noise assumptions and current-bin observation mismatch remain
+hypotheses, not proven causes. No concrete correctness defect was found;
+proceed with the synthetic-only GRU implementation without changing Kalman.

@@ -1134,3 +1134,128 @@ current-bin linear/Gaussian observations, temporally independent residuals and
 diagonal R remain possible model limitations, not proven causes of the poor score.
 No assumption was tuned away using validation, and no final-test claim is made.
 Next increment: a small causal GRU, retaining the common preparation/evaluation.
+
+
+## Bounded-window GRU components — Phase 5A (2026-10-19)
+
+This increment verifies components on synthetic data only. No recording GRU
+training, validation predictions or tuning have run; final test stays closed.
+The brief artifact-only Kalman diagnosis is in the existing
+[report](../reports/phase4b_kalman.md), with no parameter change.
+
+### Architecture, shapes and bounded memory
+
+Use one PyTorch nn.GRU layer, unidirectional, bias=True, batch_first=True,
+dropout=0, hidden size H=32 initially, followed by a linear H-to-2 head reading
+the final hidden state. Reuse Phase 2D's oldest-to-newest [N,10,96] histories,
+frozen scaler, channel/unit order, timestamps and preparation identity.
+gru_inputs applies the existing scaler.transform, then casts to contiguous
+float32. No new preparation, normalization fit, flattening, channel selection,
+lag or target scaling. Check consecutive source IDs/shared edges and retain the
+existing ExampleIndex; reject incompatible/nonfinite data rather than repairing it.
+
+| Stage | One example | Batch |
+| --- | --- | --- |
+| Input | [1,10,96] | [B,L,C] |
+| Fresh zero hidden state | [1,1,32] | [1,B,H] |
+| Recurrent output | [1,10,32] | [B,L,H] |
+| Final hidden state | [1,1,32] | [1,B,H] |
+| Linear-head input | [1,32] | [B,H] |
+| vx/vy in mm/s | [1,2] | [B,2] |
+
+For C=96,H=32, parameter count is 3HC+3H²+6H+2H+2 = 12546.
+The output belongs to the final source bin, estimating completed-bin velocity
+after that bin closes. Ten 20 ms bins provide bounded 200 ms neural support;
+no future observation enters.
+
+Hidden state is a temporary 32-value summary that changes as the ten inputs are
+read. Weights/biases are shared learned rules, fixed during inference. The update
+gate balances old memory and a new candidate; the reset gate controls how much
+old memory contributes to the candidate. In PyTorch's convention (elementwise *):
+
+r = sigmoid(W_ir*x+b_ir+W_hr*h_previous+b_hr)
+z = sigmoid(W_iz*x+b_iz+W_hz*h_previous+b_hz)
+n = tanh(W_in*x+b_in+r*(W_hn*h_previous+b_hn))
+h = (1-z)*n+z*h_previous
+
+Larger z retains more old hidden state in this convention. See the versioned
+[PyTorch GRU documentation](https://docs.pytorch.org/docs/2.14/generated/torch.nn.GRU.html).
+Do not confuse the learned reset gate inside a window with starting each window
+from zero. Every forward call creates h0 [1,B,H]; batch entries and separate
+calls share no hidden state. Overlapping windows share raw bins and weights,
+but recompute their own summaries. No persistent hidden-state API is provided.
+Later replay must rebuild the same eligible window and start from zero too.
+Gaps, partition ownership and complete-support warm-up remain Phase 2D's rules.
+
+### Training choices and validation selection
+
+configs/gru.toml holds component defaults, not a real-data candidate grid:
+H=32, seed=2026, batch_size=256, max_epochs=50, learning_rate=0.001,
+weight_decay=0, Adam betas=(0.9,0.999), epsilon=1e-8,
+gradient_clip_norm=1, patience=8, minimum_improvement_mm_s=0.
+All are configurable. CPU float32 is the supported implementation; no GPU needed.
+
+fit_gru requires nonempty train then validation partitions, exact matching
+feature/target timestamps, IDs, masks and contexts, fixed eligibility, and
+training times before validation. It accepts the already frozen scaler and never
+fits it. Train on MSE averaged across examples and both unscaled velocity axes;
+copy training targets to float32, preserving originals for shared float64 scoring.
+Use Adam, clear gradients, backpropagate loss, clip the global gradient L2 norm
+before optimizer.step, and reject nonfinite losses/gradients/weights. Report the
+norm BEFORE clipping. Clipping limits gradients, not prediction values.
+See [clip_grad_norm_](https://docs.pytorch.org/docs/2.14/generated/torch.nn.utils.clip_grad_norm_.html).
+
+Use seeded permutations of independent training windows, keeping temporal order
+inside each window. This changes batching, not the chronological partition split.
+CPU training uses one torch thread and deterministic algorithms, restoring the
+caller's CPU RNG, thread and deterministic/warn-only settings on exit. Synthetic
+NumPy generation uses a separate recorded local seed. Cross-platform/version
+bitwise reproducibility is not established.
+
+After each epoch, generate eval/inference-mode validation predictions without
+labels, then score with Phase 3 evaluate_velocity. Select minimum overall RMSE;
+an improvement must exceed the configured threshold, and exact ties retain the
+earliest epoch. Stop after patience non-improving epochs; restore a cloned best
+state_dict. Validation labels select a snapshot but do not enter forward,
+gradients, optimizer steps or preprocessing. Epoch online training loss is a
+sample-weighted average of pre-update batch losses, not a final-weight training
+score. No scheduler or generic training framework is added.
+
+### Dependencies, persistence and synthetic check
+
+The actual uv-generated lockfile includes torch 2.14.1+cpu on Windows/Linux via
+an explicit CPU index, with PyPI fallback on macOS, following the
+[uv PyTorch guide](https://docs.astral.sh/uv/guides/integration/pytorch/).
+Windows Python 3.11.17 was verified; other platforms were not executed.
+No CUDA, torchvision or torchaudio dependency was added. Existing uv sync --locked
+remains the setup workflow.
+
+Checkpoints contain state_dict tensors and primitive metadata: full architecture,
+input dimensions/reset/order/units/dtype, frozen scaler/source/split/channel/unit
+identity and fingerprint, training configuration/seed/history/best epoch,
+parameter count and package versions. Exclusive writes preserve previous files.
+Load on CPU with weights_only=True, strict state keys/shapes, finite float32
+weights, supported policy/schema and optional expected-scaler verification;
+return eval mode without consuming the caller's RNG. Only trusted local
+checkpoints are in scope. Optimizer resume and cross-version prediction agreement
+are not implemented/claimed; versions record provenance.
+
+~~~powershell
+uv sync --locked
+uv run --locked python scripts/check_gru.py phase5a-review
+uv run --locked pytest tests/test_gru.py
+~~~
+
+check_gru.py imports no recording loader. Fixed synthetic [16,10,96] histories
+have toy labels depending on oldest/final bins; later-timestamp copies serve only
+to exercise validation/checkpoint wiring during memorization, not independent
+validation. The smoke budget is explicitly 250 epochs, batch 16, learning rate
+0.02 and patience 250; these are not real-data experiment candidates.
+Generated gru.pt/run.json remain under ignored runs/. A new run ID preserves
+old output. Metadata record fixture/training seeds, synthetic identity, shapes,
+code/configuration/checkpoint hashes, environment, Git commit/dirty status and
+whole-run duration, not latency. Synthetic success proves training-path mechanics,
+not neural decoding accuracy. See progress for actual checks/results.
+
+Next: Phase 5B, predeclare a small set of real-training configurations and compare
+on the unchanged validation population against ridge, Kalman and trivial baselines.
