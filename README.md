@@ -14,8 +14,9 @@ and a source-bound chronological split/timing plan are available. Causal
 Aligned cursor-velocity targets use actual sample elapsed time. Causal ten-bin
 histories and frozen training-only channel normalization are implemented.
 Zero/training-mean velocity baselines and shared validation metrics are verified.
-Neural decoders and latency measurements remain planned. This is an independent project that makes no clinical
-claims.
+Ridge regression is fitted and selected on validation; Kalman/GRU decoders,
+final test evaluation and latency measurements remain planned. This independent
+project makes no clinical claims.
 
 ## Experiment and evaluation plan
 
@@ -31,7 +32,8 @@ The planned evaluation uses chronological train/validation/test partitions,
 boundary gaps, and training-only preprocessing. Zero and training-mean baselines,
 ridge regression, a linear Gaussian Kalman decoder, and a small unidirectional
 GRU will be compared on the same eligible timestamps using velocity R² and RMSE.
-Learned decoders and final test evaluation remain planned.
+Ridge validation results are available; Kalman/GRU and final test evaluation
+remain planned.
 
 A later visual replay will compare actual and decoded cursor trajectories,
 with decoded position obtained by integrating predicted velocity from a labeled
@@ -158,12 +160,36 @@ These are constant baselines, not neural decoders. Overall validation RMSE is
 about 72.82 mm/s for both; full axis scores, provenance and limitations are in
 the [validation report](reports/phase3a_baselines.md). No final test claim follows.
 
+## Fit and select ridge regression on validation
+
+~~~powershell
+uv sync --locked
+uv run --locked python scripts/train_ridge.py phase3b-review
+~~~
+
+Use a new run directory name. The command reuses existing preparation, frozen
+training-only normalization, oldest-first [10,96] → [960] flattening and shared
+scoring. It fits six predeclared lambda candidates only on training, selecting
+the smallest overall validation RMSE with the documented tie-break.
+No test targets/windows, predictions or scores are produced.
+
+Selected lambda=1000 achieves overall validation RMSE 52.571 mm/s and mean
+R² 0.480, versus 72.817 mm/s and near-zero R² for trivial baselines on the same
+2775 examples. These are development validation results, not final test scores.
+See the [ridge report](reports/phase3b_ridge.md) for all candidates, axis metrics,
+provenance, the first prediction and limitations.
+
+Ignored run outputs include explicit JSON model parameters/frozen transform,
+effective configuration and identities, timestamped predictions, scores and
+the same fixed first-ten-second validation plot. Save/load prediction equality
+is checked. Existing runs are preserved.
+
 ## Setup
 
 Python 3.11 is the supported compatibility target for this checkpoint;
 compatibility with other Python versions has not been tested. Use uv 0.12.23.
-Runtime dependencies are NumPy/h5py for loading and Matplotlib for recorded-data
-figures.
+Runtime dependencies are NumPy/h5py for loading, Matplotlib for figures and
+scikit-learn 1.7 for ridge fitting (including its resolved SciPy requirements).
 Existing pytest and Ruff development configuration is retained; model/training
 dependencies will be added only when needed.
 
@@ -322,6 +348,6 @@ units, timing, coverage differences, and unresolved alignment details are
 documented in the dataset card. Chronological partitions and timing are specified in
 [methods](docs/methods.md). Causal counts and aligned velocity labels are
 implemented alongside causal histories and training-only normalization. Validation
-baseline evaluation is implemented; neural decoder fitting and final test
-evaluation remain planned.
+baseline evaluation and ridge fitting/selection are implemented. Kalman/GRU
+and final test evaluation remain planned.
 A license for this project's code has not been chosen.

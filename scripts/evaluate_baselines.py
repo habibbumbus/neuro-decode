@@ -16,10 +16,9 @@ from pathlib import Path
 import numpy as np
 from bin_recording import load_verified_inputs
 
-from neurodecode.data.binning import bin_partition
-from neurodecode.data.features import build_history_windows
-from neurodecode.data.targets import align_velocity_targets
+from neurodecode.data.features import HistoryWindows, prepare_partition
 from neurodecode.evaluation import (
+    VelocitySeries,
     evaluate_velocity,
     index_from_windows,
     targets_from_windows,
@@ -38,6 +37,57 @@ def git_state() -> dict:
         prefix + ["status", "--porcelain"], capture_output=True, text=True, check=True
     ).stdout
     return {"commit": commit, "dirty": bool(status), "status": status.splitlines()}
+
+
+def write_predictions(
+    path: Path,
+    windows: HistoryWindows,
+    labels: VelocitySeries,
+    predictions: dict[str, VelocitySeries],
+) -> None:
+    """Shared timestamped export; the same strict scorer validates all pairing."""
+    prefixes = {"Zero velocity": "zero", "Training mean": "mean", "Ridge": "ridge"}
+    for prediction in predictions.values():
+        evaluate_velocity(labels, prediction)
+    index = labels.index
+    with path.open("x", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(
+            [
+                "partition",
+                "segment_id",
+                "bin_id",
+                "time_s",
+                "score_mask",
+                "first_source_bin_id",
+                "last_source_bin_id",
+                "actual_vx_mm_s",
+                "actual_vy_mm_s",
+                *[
+                    f"{prefixes[name]}_v{axis}_mm_s"
+                    for name in predictions
+                    for axis in ("x", "y")
+                ],
+            ]
+        )
+        for row in range(index.time_s.size):
+            writer.writerow(
+                [
+                    index.partition,
+                    int(index.segment_ids[row]),
+                    int(index.bin_ids[row]),
+                    float(index.time_s[row]),
+                    bool(index.score_mask[row]),
+                    int(windows.source_bin_end_indices[row, 0]),
+                    int(windows.source_bin_end_indices[row, -1]),
+                    *labels.values_mm_s[row].tolist(),
+                    *[
+                        value
+                        for prediction in predictions.values()
+                        for value in prediction.values_mm_s[row].tolist()
+                    ],
+                ]
+            )
 
 
 def main() -> None:
@@ -61,9 +111,9 @@ def main() -> None:
     prepared = {}
     # Intentionally never construct, predict, plot or score the test partition.
     for partition in ("train", "validation"):
-        bins = bin_partition(recording, specification, config, partition)
-        targets = align_velocity_targets(recording, bins, specification, config)
-        prepared[partition] = build_history_windows(targets, specification, config)
+        _, prepared[partition] = prepare_partition(
+            recording, specification, config, partition
+        )
     training, validation = prepared["train"], prepared["validation"]
     mean_model = TrainingMeanVelocity.fit(training)
     index = index_from_windows(validation)  # Label-free predictor inputs.
@@ -78,40 +128,7 @@ def main() -> None:
         for name, prediction in predictions.items()
     }
     output.mkdir(parents=True)
-    with (output / "predictions.csv").open("w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(
-            [
-                "partition",
-                "segment_id",
-                "bin_id",
-                "time_s",
-                "score_mask",
-                "first_source_bin_id",
-                "last_source_bin_id",
-                "actual_vx_mm_s",
-                "actual_vy_mm_s",
-                "zero_vx_mm_s",
-                "zero_vy_mm_s",
-                "mean_vx_mm_s",
-                "mean_vy_mm_s",
-            ]
-        )
-        for row in range(index.time_s.size):
-            writer.writerow(
-                [
-                    index.partition,
-                    int(index.segment_ids[row]),
-                    int(index.bin_ids[row]),
-                    float(index.time_s[row]),
-                    bool(index.score_mask[row]),
-                    int(validation.source_bin_end_indices[row, 0]),
-                    int(validation.source_bin_end_indices[row, -1]),
-                    *labels.values_mm_s[row].tolist(),
-                    *predictions["Zero velocity"].values_mm_s[row].tolist(),
-                    *predictions["Training mean"].values_mm_s[row].tolist(),
-                ]
-            )
+    write_predictions(output / "predictions.csv", validation, labels, predictions)
     os.environ.setdefault("MPLCONFIGDIR", str(Path("runs/.matplotlib").resolve()))
     plot = save_baseline_velocity_figure(
         labels,

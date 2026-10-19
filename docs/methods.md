@@ -711,3 +711,137 @@ Exported scores were independently recalculated from CSV; a second run produced
 identical predictions/metrics. The actual figure was visually inspected.
 No additional dependency, learned decoder, ridge fit, CI or demo was added.
 Next: Phase 3B, fit and validate ridge regression on the same eligible examples.
+
+
+## Ridge decoder — Phase 3B, October 18, 2026
+
+### Dimensions, objective and training-only transforms
+
+Use the same prepared partitions, targets, timestamps/masks and 96-channel/unit
+order as Phase 2D and the same evaluation functions as Phase 3A.
+prepare_partition is a thin shared composition of the existing bin_partition,
+align_velocity_targets and build_history_windows functions. It adds no parser,
+timing definition or eligibility rule. Both baseline and ridge commands use it.
+
+Each count history is [L,C]=[10,96], oldest-to-newest. Apply the frozen Phase 2D
+per-channel transform at every lag and call the existing flatten_features:
+C-order [960], oldest lag first, with channels varying fastest.
+Feature d=l*C+c identifies zero-based lag l (oldest=0) and channel c.
+Training X is [13070,960], Y [13070,2]; validation X [2775,960], Y [2775,2].
+Keep all silent/constant channels and raw counts. Do not normalize Y.
+
+Fit W [960,2] and intercept b [2] to minimize:
+
+||Y − XW − 1bᵀ||²_F + lambda ||W||²_F.
+
+The loss is a sum, not an average over training rows; lambda's numerical scale
+depends on this convention and normalization. W contains one contribution weight
+per feature and output axis. b supplies a constant offset in mm/s and is not
+penalized. For intuition, centering X/Y yields
+(XᵀX + lambda I)W = XᵀY; the implementation never explicitly inverts this matrix.
+
+Use scikit-learn 1.7.2 Ridge(alpha=lambda, solver="svd", fit_intercept=True),
+not a custom fitting solver. Its dense SVD solver handles correlated histories
+and zero columns; intercept centering/reconstruction leaves b unpenalized.
+Confirmed the installed library's intercept reconstruction and tested constant
+targets with very large lambda: weights shrink to zero, intercept retains the
+two constant targets. See [Ridge documentation](https://scikit-learn.org/1.7/modules/generated/sklearn.linear_model.Ridge.html).
+
+Fit normalization on unique valid training bins only, exactly as Phase 2D.
+If the existing phase2d/count_scaler.json is available, restore its core frozen
+metadata and verify exact identity against a fresh training-only fit. Refuse
+any disagreement. If absent in a new checkout, recompute via the same existing
+fit_count_scaler rule. Save the complete verified transform with the model.
+No validation statistics update channel order, means or scales.
+
+RidgeInputs contains normalized flat features and label-free ExampleIndex,
+history length, feature-order convention and full transform fingerprint.
+Training fit additionally receives matching training VelocitySeries. Reject
+non-training fit, extra training masks, nonfinite data, mismatched shapes/IDs/
+context and nonpositive/nonfinite lambda. Predict receives no target values.
+A validation-label change cannot alter a particular candidate's weights or
+normalization. It can legitimately select a different lambda and thus a
+different final candidate; fitting leakage and validation selection differ.
+
+### Predeclared grid, primary metric and test gate
+
+configs/ridge.toml fixes lambda=[0.1,1,10,100,1000,10000] before real candidate
+results are inspected. Every candidate fits only the eligible training rows.
+Use the unchanged overall validation RMSE as primary metric, minimizing it.
+Take the largest lambda whose score is within absolute 1e-9 mm/s of the minimum.
+Do not substitute mean R² as the selection metric, extend the grid after seeing
+results or use test data for selection.
+
+Score the selected ridge model plus zero/training-mean predictors with the same
+evaluate_velocity function and exact validation index/mask. The baseline exporter
+is shared, retaining original baseline columns and adding ridge vx/vy columns.
+Undefined-axis/nonfinite/error policies from Phase 3A are unchanged.
+
+Only training and validation targets/windows are constructed by the ridge
+command. The common loader still reads the recording and global coverage
+metadata as before. No test model selection, targets/windows, predictions,
+plots or scoring are added. Selection consumes validation labels, so selected
+validation performance is development evidence; final test scoring stays closed.
+
+### Persistence, reproducible command and actual validation
+
+~~~powershell
+uv sync --locked
+uv run --locked python scripts/train_ridge.py phase3b-review
+~~~
+
+Use a new directory under ignored runs/. Save ridge.json with W, b, lambda,
+solver/intercept convention, feature/output order/units, full channel/unit
+mapping and frozen transform, fit count, fitting library/version and transform
+hash. FrozenCountScaler.from_metadata restores the existing fit convention
+without refitting; it validates finite means, positive scales, constant-channel
+scale 1, dimensions and exact policy metadata. RidgeDecoder.load validates
+schema, parameter dimensions/values, ordering/units and transform hash; an
+optional expected scaler must match exactly. Inference also rejects incompatible
+channel/unit order, source/split/configuration/policy identity, L or transform.
+Files are created exclusively; existing runs/model artifacts are preserved.
+
+The command verifies exact validation prediction equality after saving/loading.
+Predictions use XW+b with the extracted library-fit parameters; synthetic tests
+also compare this path with sklearn's own predict method.
+
+run.json records source/full split, base and ridge configuration identity,
+full normalization and provenance, channel/unit/feature order, every candidate's
+validation metrics, selected lambda, selected training diagnostics, validation
+scores/first example, plotting rule, package versions/native thread settings,
+Git commit/dirty state, implementation and artifact SHA-256 values and whole-run
+duration. Duration includes preparation, six fits, selection and export; it is
+not inference latency. metrics.json and timestamped predictions.csv retain
+shared scoring evidence. Model parameters and all generated artifacts stay in
+ignored runs/, with no processed cache or test-model output.
+
+Use the existing first-ten-second validation plotting rule unchanged:
+[1550.200,1560.200) s, 500 samples. The shared plot now supports ridge alongside
+the two constant baselines. Reject gaps/invalid intervals rather than searching
+for a favorable clip. No smoothing, signal shift or trajectory integration.
+
+The real grid selected lambda=1000, an interior grid value. Validation overall
+RMSE is 52.571379922589024 mm/s, per-axis [56.84421168030996,47.9190522900287].
+R² is [0.47454563800409655,0.48460628954752893], mean 0.47957596377581274.
+Both baseline metrics and every original baseline CSV column/row match Phase 3A.
+All three score the same 2775 target timestamps from 1550.200 to 1605.680 s.
+See the [ridge validation report](../reports/phase3b_ridge.md) for the full grid,
+comparison, provenance and first prediction. The first ridge prediction has
+larger errors than zero, illustrating that aggregate improvement is not a
+guarantee at every timestamp.
+
+All 183 tests pass, including 30 new ridge checks and 153 retained checks.
+Tests cover known synthetic linear recovery, exact oldest/channel order,
+unpenalized intercept, save/load equality, immutable/rejected transform/channel
+contexts, validation-label independence of fitting, shrinkage, selection/ties
+and malformed artifacts. Lint/format/lock checks pass; a second real run produces
+identical model, prediction CSV and metric JSON. Exported metric recalculation
+matches, and the actual figure was visually inspected. New dependencies are
+only scikit-learn and its tool-resolved requirements.
+
+Ridge beats both trivial baselines, so no failure-triggered preparation change
+was made. Splits, timing/targets, channel policy and normalization remain fixed.
+Overlapping histories are correlated; validation selection can overfit with
+repeated experimentation, and this one-session result has no final test,
+physiological alignment, cross-session or live-control guarantee.
+Next checkpoint: the Kalman decoder.

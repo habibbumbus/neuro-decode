@@ -228,7 +228,7 @@ def save_baseline_velocity_figure(
     session: str,
     output: str | Path,
 ) -> dict:
-    """Two velocity axes on first eligible ten seconds; no smoothing or integration."""
+    """Shared validation comparison on first eligible ten seconds; no smoothing."""
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib.figure import Figure
 
@@ -244,7 +244,9 @@ def save_baseline_velocity_figure(
     figure = Figure(figsize=(12, 6), layout="constrained")
     FigureCanvasAgg(figure)
     axes = figure.subplots(2, 1, sharex=True)
-    styles = (("#d95f02", "--"), ("#16803b", ":"))
+    styles = (("#d95f02", "--"), ("#16803b", ":"), ("#b52b2d", "-"))
+    if not 1 <= len(predictions) <= len(styles):
+        raise ValueError("Expected one to three validation predictors")
     for axis, name in enumerate(("x", "y")):
         axes[axis].plot(
             time,
@@ -254,7 +256,7 @@ def save_baseline_velocity_figure(
             label="Recorded-derived velocity",
         )
         for (label, prediction), (color, linestyle) in zip(
-            predictions.items(), styles, strict=True
+            predictions.items(), styles[: len(predictions)], strict=True
         ):
             axes[axis].plot(
                 time,
@@ -272,7 +274,7 @@ def save_baseline_velocity_figure(
     axes[-1].set_xlabel(f"Time since {start:.3f} s [s]")
     figure.suptitle(
         f"Validation velocity | {session}\n"
-        f"First eligible interval [{start:.3f}, {start + 10:.3f}) s · constant baselines"
+        f"First eligible interval [{start:.3f}, {start + 10:.3f}) s · actual and predicted velocity"
     )
     figure.savefig(output, dpi=150, bbox_inches="tight", facecolor="white")
     return {

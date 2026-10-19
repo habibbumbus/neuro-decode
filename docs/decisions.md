@@ -89,3 +89,22 @@ Open validation for development, while final test scoring stays closed.
 Fix the plotted interval to the first eligible ten validation seconds before
 viewing quality; refuse gaps instead of choosing a favorable replacement.
 Save detailed ignored run evidence; commit only the small technical report.
+
+
+## 2026-10-18 — Ridge fitting and validation selection
+
+Reuse prepared histories, frozen unique-bin training normalization and shared
+Phase 3A scoring. Map oldest-to-newest [10,96] histories to 960 features in the
+existing C-order; fit two velocity outputs with an unpenalized intercept.
+
+Use scikit-learn's SVD ridge solver and summed squared-error objective.
+Declare lambda grid [0.1,1,10,100,1000,10000] before results; minimize overall
+validation RMSE, with largest lambda within absolute 1e-9 mm/s of the minimum
+as tie-break. Keep test scoring closed. Validation labels select a candidate
+but never fit candidate weights or normalization.
+
+Save explicit JSON parameters plus the exact frozen transform and feature/
+source/split identity, with strict loading/context checks and no pickle.
+Reuse the baseline plotting interval and exporter; preserve old artifacts.
+Selected lambda=1000 beats both trivial validation baselines, with no detected
+defect requiring a diagnostic increment. Continue next with the Kalman decoder.

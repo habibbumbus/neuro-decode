@@ -7,7 +7,9 @@ from dataclasses import asdict, dataclass
 import numpy as np
 from numpy.typing import NDArray
 
-from neurodecode.data.targets import AlignedTargets
+from neurodecode.data.binning import bin_partition
+from neurodecode.data.loaders import Recording
+from neurodecode.data.targets import AlignedTargets, align_velocity_targets
 from neurodecode.splits import TimingConfig
 
 
@@ -283,6 +285,45 @@ class FrozenCountScaler:
             )
         return (windows.X_raw.astype(np.float64) - self.means) / self.scales
 
+    @classmethod
+    def from_metadata(cls, metadata: dict) -> "FrozenCountScaler":
+        """Restore the exact fit/policy metadata for model loading; never refit."""
+        result = cls(
+            np.array(metadata["means"], dtype=float),
+            np.array(metadata["scales"], dtype=float),
+            np.array(metadata["constant_channels"]),
+            tuple(metadata["channel_ids"]),
+            tuple(tuple(u) for u in metadata["unit_indices"]),
+            metadata["history_bins"],
+            tuple(sorted(metadata["identity"].items())),
+            metadata["fitted_bin_count"],
+            metadata["fitted_bin_identity_sha256"],
+            metadata["fitted_counts_sha256"],
+        )
+        c = len(result.channel_ids)
+        if (
+            c < 1
+            or result.history_bins < 1
+            or result.fitted_bin_count < 1
+            or len(set(result.channel_ids)) != c
+            or len(result.unit_indices) != c
+            or any(
+                a.shape != (c,)
+                for a in (result.means, result.scales, result.constant_channels)
+            )
+            or result.constant_channels.dtype != np.dtype(bool)
+            or not np.isfinite(result.means).all()
+            or not np.isfinite(result.scales).all()
+            or np.any(result.scales <= 0)
+            or np.any(result.scales[result.constant_channels] != 1)
+        ):
+            raise ValueError("Invalid saved count scaler")
+        if result.to_metadata() != metadata:
+            raise ValueError("Unsupported or changed normalization metadata/policy")
+        for array in (result.means, result.scales, result.constant_channels):
+            array.setflags(write=False)
+        return result
+
     def to_metadata(self) -> dict:
         """Small replay-relevant fit metadata; bulk windows remain unsaved."""
         return {
@@ -344,3 +385,12 @@ def fit_count_scaler(
         hashlib.sha256(identities.astype("<i8").tobytes()).hexdigest(),
         hashlib.sha256(training.bins.counts[valid].astype("<i8").tobytes()).hexdigest(),
     )
+
+
+def prepare_partition(
+    recording: Recording, specification: dict, config: TimingConfig, partition: str
+) -> tuple[AlignedTargets, HistoryWindows]:
+    """Shared thin composition of existing bin/target/window rules; no new eligibility."""
+    bins = bin_partition(recording, specification, config, partition)
+    targets = align_velocity_targets(recording, bins, specification, config)
+    return targets, build_history_windows(targets, specification, config)

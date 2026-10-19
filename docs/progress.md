@@ -1381,3 +1381,204 @@ Phase 3A is locally implemented and verified; its changes remain uncommitted.
 The assistant performed no staging, commit, push, merge or branch switch.
 Next increment after understanding/review and the user's Git checkpoint:
 **Phase 3B: fit and validate a ridge-regression decoder on the same examples**.
+
+
+## Phase 3B — ridge movement decoder (2026-10-18)
+
+### Verified starting state and prior checkpoint
+
+Read unchanged CODEX.md completely (including sections 15/16), applicable public
+progress/methods/decisions, saved split/configuration and baseline/evaluation/
+window/normalization code. No applicable AGENTS.md was found in checked ancestor
+and affected directories. Starting branch main, HEAD cd71d47 (velo baselines and
+eval metrics), local origin/main matching, ahead/behind 0/0.
+Phase 3A is committed; its historical uncommitted status above is superseded.
+GitHub main was also verified at cd71d47 in the preceding status check in this
+session; this increment did not refresh or modify remote references.
+
+Tracked working tree and staging were clean. Preserved the unrelated untracked
+%SystemDrive%/ cache directory and all existing generated outputs.
+CODEX.md stays untracked through .git/info/exclude; data/raw/, data/processed/
+and runs/ remain ignored and have no tracked files. No Git stage, commit, push,
+merge or branch switch was performed. No dataset or split/timing change occurred.
+
+Inspected actual Phase 3A metrics/run metadata in runs/phase3a-baselines.
+They record the previously measured 2775 validation rows, near-zero R² and
+overall RMSE 72.817486/72.817654 mm/s for zero/training mean. That run's code
+was dirty relative to its recorded base commit, as already documented.
+
+### Concepts explained before implementation
+
+One [10,96] history becomes 960 oldest-to-newest features, channels fastest.
+Weights [960,2] map standardized counts to vx/vy; an unpenalized [2] intercept
+provides the constant output offset. Lambda penalizes large weights: stronger
+shrinkage can reduce noise fitting but may suppress useful variation.
+Worked one-output example: features [2,1], weights [3,−1], intercept 0.5 give
+2*3−1+0.5=5.5. Training-only normalization prevents held-out activity from
+changing feature scaling. The exact Phase 2D fit basis remains unique training
+bins, including source warm-up, not repeated window entries.
+
+Declared before candidate results: lambda grid [0.1,1,10,100,1000,10000],
+primary metric overall validation RMSE, tie tolerance absolute 1e-9 mm/s,
+largest tied lambda wins. Explained that validation may change the selected
+lambda but must not fit any candidate's weights or normalization.
+Phase 3A demonstrated frozen-mean prediction, negative R² interpretation and
+validation/test separation remain recorded. Ridge regularization, flattening/
+matrix dimensions and model comparison understanding remain pending teach-back;
+implementation/test evidence is not proof of independent understanding.
+
+### Implemented files and scope
+
+- configs/ridge.toml: predeclared solver/grid/selection policy, separate from the
+  unchanged source-bound base timing configuration.
+- src/neurodecode/models/ridge.py: label-free normalized RidgeInputs, sklearn
+  SVD training-only fitting, immutable W/b, full transform fingerprint, explicit
+  numeric JSON persistence, strict loading/context checks and deterministic
+  selection/tie rule. Intercept is unpenalized; no explicit matrix inversion.
+- src/neurodecode/data/features.py: restore/validate frozen fit metadata and a
+  thin shared prepare_partition composition of existing bin/target/window code.
+  Core eligibility, raw counts, timing/targets and fit_count_scaler are unchanged.
+- scripts/train_ridge.py: training-only six-candidate fit, validation selection,
+  common scoring of selected ridge and both trivial predictors, ignored run
+  artifacts and exact model-load prediction check. No test partition preparation.
+- scripts/evaluate_baselines.py: use shared preparation and a shared timestamped
+  exporter; retain original baseline CSV columns/values. Its git_state helper is
+  reused for run provenance. Existing run directories remain preserved.
+- src/neurodecode/plotting.py: allow a third predictor on the same baseline
+  validation interval; show the ridge trace with the original units/time rule.
+- tests/test_ridge.py: 30 focused synthetic checks.
+- pyproject.toml and uv.lock: add scikit-learn>=1.7,<1.8 through uv. Actual installed
+  scikit-learn 1.7.2 brings SciPy 1.17.1, joblib 1.6.0, threadpoolctl 3.7.0 and
+  cloudpickle 3.1.2. Existing NumPy 2.4.6 remains unchanged.
+- README, dataset/methods/decisions/progress and reports/phase3b_ridge.md record
+  commands, objective, protocol, verified validation results and limitations.
+
+Consulted official versioned sklearn Ridge documentation and installation
+requirements. Inspected the installed library's intercept reconstruction;
+large-lambda constant-target tests independently verify an unpenalized intercept.
+Initial dependency access was blocked by restricted networking; the approved
+network-enabled uv add completed successfully and generated the lockfile.
+No future ML stack or dataset download was added.
+
+### Actual verification and reproduction
+
+Commands executed from the repository root:
+
+~~~powershell
+uv --cache-dir .uv-cache add "scikit-learn>=1.7,<1.8"
+uv --cache-dir .uv-cache run --locked --no-sync ruff format src/neurodecode/models/ridge.py src/neurodecode/data/features.py scripts/evaluate_baselines.py src/neurodecode/plotting.py scripts/train_ridge.py tests/test_ridge.py
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider tests/test_ridge.py --tb=short -x
+uv --cache-dir .uv-cache run --locked --no-sync pytest -p no:cacheprovider --tb=short
+uv --cache-dir .uv-cache run --locked --no-sync ruff check --no-cache .
+uv --cache-dir .uv-cache run --locked --no-sync ruff format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/train_ridge.py phase3b-ridge
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/evaluate_baselines.py phase3b-baseline-check
+uv --cache-dir .uv-cache run --locked --no-sync python scripts/train_ridge.py phase3b-ridge-repeat
+~~~
+
+Focused tests passed 30/30; all 183 tests passed including 153 retained checks.
+Lint passed; all 34 Python files passed formatting; lock consistency passed.
+An initial incomplete synthetic split fixture lacked overlap metadata and was
+corrected before final tests/real measurement; a source-string escaping error
+was also corrected during development. No dataset/eligibility relaxation was
+used to fix a test. No required check remains blocked. Tests include the existing
+outside-checkout installation/import smoke test; no fresh temporary environment
+installation was repeated.
+
+New synthetic evidence covers recovery of a known two-output linear mapping,
+comparison with sklearn predict, actual oldest/channel feature order,
+unpenalized intercept under large lambda, stronger weight shrinkage,
+save/load equality, incompatible channel/transform/history/context refusal,
+nonfinite/malformed input/artifact refusal, validation-label independence of
+candidate fitting/normalization, selection/ties and preserved fit policies.
+
+The real command restored Phase 2D normalization from the existing ignored
+metadata and verified exact agreement with a fresh training-only fit.
+Normalizer fingerprint:
+603aa299f0a1d75625acea41a18b9ecf56c58e4e0515ec8322ea1aa34abe68dd.
+Its 13079 fit source bins and all 96 channel identities remain unchanged.
+
+The selected model's save/load gave exact validation prediction equality.
+A repeated real run produced byte-identical ridge.json, predictions.csv and
+metrics.json. Independent recalculation from the exported CSV reproduced ridge
+axis/overall RMSE and R². Every original baseline CSV column/row matches the
+Phase 3A export exactly; rerunning its entry point also reproduced its metrics.
+The real figure was opened and visually inspected: correct x/y velocity units,
+shared offset, fixed [1550.200,1560.200) s interval and 500 samples, no shift/
+smoothing/integration. Both constant baseline traces remain visible near zero.
+
+Generated artifacts stay under ignored runs/phase3b-ridge and the repeat/check
+directories: full model/normalization JSON, effective configuration/provenance,
+all candidate scores, package versions/native thread settings, Git commit/dirty
+state, code/artifact hashes, metrics, timestamped predictions and PNG.
+New code was uncommitted relative to base cd71d47 when measured; do not attribute
+the result to that base commit alone. Native thread pools were limited to one.
+Whole-run duration includes preparation/grid fitting/export and is not latency.
+
+### Actual selection, comparison and example
+
+All 13070 eligible training and 2775 validation examples retain [10,96] histories,
+flattened to [960], with unchanged [2] mm/s labels and exact identities/masks.
+Scored validation ends span 1550.200–1605.680 s inclusive (55.480 s span).
+
+| Lambda | Overall validation RMSE (mm/s) |
+| ---: | ---: |
+| 0.1 | 52.886882 |
+| 1 | 52.886503 |
+| 10 | 52.882726 |
+| 100 | 52.846123 |
+| 1000 | 52.571380 |
+| 10000 | 52.807856 |
+
+Selected lambda=1000, an interior value. No tie applied and no grid extension
+or test-based selection occurred.
+
+| Predictor | RMSE x (mm/s) | RMSE y (mm/s) | Overall RMSE (mm/s) | R² x | R² y | Mean R² |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Zero velocity | 78.418547 | 66.748063 | 72.817486 | −2.097390e−7 | −2.416840e−8 | −1.169537e−7 |
+| Training mean | 78.418755 | 66.748186 | 72.817654 | −5.499573e−6 | −3.690502e−6 | −4.595038e−6 |
+| Ridge, lambda=1000 | 56.844212 | 47.919052 | 52.571380 | 0.474546 | 0.484606 | 0.479576 |
+
+Selected training overall RMSE is 50.301849 mm/s; training mean R² 0.578469.
+These are training diagnostics, separate from validation. The selected
+validation score reflects six-way model selection and remains development
+evidence, not final test performance or a significance claim.
+
+First validation prediction at 1550.200 s (ID 13110):
+normalized [10,96] → flattened [960] → W [960,2] plus intercept
+[-0.10485421436834126,0.12171317024650069] gives
+[31.39011385437117,12.002288083723482] mm/s.
+Actual [14.162167438059216,3.7882881059650577] yields signed errors
+[17.22794641631195,8.213999977758423] mm/s. Squared errors aggregate through
+the unchanged Phase 3A metric formulas. This individual example is worse than
+zero velocity; aggregate ridge performance is better. Retained the first
+chronological example without favorable-example selection.
+
+### Limits, learning and next checkpoint
+
+No test targets/windows, predictions, plots or scores were generated. The
+existing loader still reads the acquired recording/global coverage metadata;
+prior deterministic test preparation audits remain documented. Final test
+performance stays closed. No target definition, split, channel filter, neural
+lag, forecast horizon, smoothing or normalization policy was changed.
+No other model, Kalman fitting, trajectory replay/demo, CI or latency benchmark
+was implemented.
+
+Ridge beats both trivial baselines, and current checks reveal no defect requiring
+a focused diagnostic/fix increment. Explained that an individual error can be
+larger while aggregate RMSE improves. Understanding follow-up: correctly
+identified that increasing lambda increases the penalty on large weights.
+Recognized identical scoring timestamps as necessary for fair comparison and
+training-only normalization as protection against leakage. Clarified that all
+predictors must score the same movement examples, and held-out activity must
+not influence feature means/scales. These high-level answers are demonstrated;
+independent explanations of feature dimensions, weight shrinkage and the
+normalization leakage mechanism remain pending. Previously demonstrated
+baseline and causal-window concepts are retained without claiming all model
+mathematics are mastered.
+
+Phase 3B is locally implemented and verified; its edits remain uncommitted.
+The assistant performed no staging, commit, push, merge or branch switch.
+After review/teach-back and the user's Git checkpoint, next: **the Kalman
+decoder**, retaining these same evaluation timestamps and closed final test.

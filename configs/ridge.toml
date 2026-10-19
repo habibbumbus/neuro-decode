@@ -1,0 +1,8 @@
+# Fixed before Phase 3B candidate validation scores were inspected.
+[ridge]
+alphas = [0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]
+solver = "svd"
+fit_intercept = true
+primary_metric = "overall_rmse_mm_s"
+tie_tolerance_mm_s = 1e-9
+tie_break = "largest_alpha_within_tolerance_of_minimum"
