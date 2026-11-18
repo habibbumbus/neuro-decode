@@ -1,0 +1,18 @@
+# Phase 5B round 1: recorded before any real-data GRU training.
+round = "phase5b-round1"
+learning_rates = [0.001, 0.003]
+selection_seed = 2026
+additional_seeds = [2027, 2028]
+primary_metric = "overall_rmse_mm_s"
+checkpoint_rule = "strict minimum validation overall RMSE; earliest exact tie"
+setting_tie_tolerance_mm_s = 1e-9
+setting_tie_break = "lower learning rate"
+representative_seed = 2026
+max_runs = 4
+max_total_epochs = 200
+max_optimizer_updates = 10400
+training_budget_s = 1200
+budget_policy = "shared training deadline checked before epochs; allow current epoch to finish; skip remaining runs when expired"
+target_scaling = "none; unscaled mm/s"
+seed_summary = "all selected-setting seeds; arithmetic mean and population standard deviation; never best-seed selection"
+plot_rule = "first eligible validation timestamp plus 10 seconds; no smoothing or shift"

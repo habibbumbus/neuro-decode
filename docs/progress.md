@@ -2134,3 +2134,190 @@ backpropagation/optimization mechanism remain pending. The user runs Git.
 Next: **Phase 5B — predeclare a small set of real-training configurations,
 train only on the training partition and compare on unchanged validation rows**
 against ridge, Kalman and both trivial baselines. Keep final test closed.
+
+## Phase 5B — bounded real-training GRU validation (2026-11-17)
+
+### Starting evidence and scope
+
+Read CODEX.md, relevant progress/methods/decisions, GRU implementation/training
+and tests, existing baseline/ridge/Kalman comparison reports and local artifacts.
+No applicable AGENTS.md was found in the repository or checked ancestor paths.
+Actual branch main; HEAD f405c158800d476fd275991429bc4058c08d6c18,
+implement causal gru decoder and training checks, matching local origin/main.
+A fresh read-only ls-remote in the preceding checkpoint confirmed GitHub main
+at the same hash. This supersedes Phase 5A's historical uncommitted note.
+Tracked tree/index were clean on entry; unrelated untracked %SystemDrive%/
+was preserved. No staging, commit, push, merge, branch switch or history change.
+
+CODEX.md remains locally excluded/untracked; recordings, processed data,
+checkpoints and bulk runs remain ignored/untracked. git ls-files for those
+paths/extensions returned no entries; check-ignore verified the actual source
+and new checkpoint. Only five curated report PNGs (732,337 bytes total) are
+intended for tracking alongside source/config/tests/docs/report text.
+
+Observed Python 3.11.17, uv 0.12.23, Windows kernel build 26300,
+Intel64 Family 6 Model 186 Stepping 2, 20 logical CPUs; torch 2.14.1+cpu,
+no CUDA available. Used CPU float32, one torch/native thread, deterministic
+algorithms. Existing locked dependencies were sufficient; no installation,
+dependency change, recording download or external training service.
+
+### Teaching and declaration before training
+
+Explained one [10,96] normalized spike-count window, oldest-to-newest, fresh
+zero h0, two-output completed-bin velocity in mm/s. Training MSE supplies
+gradients; validation supplies checkpoint/settings selection without backward
+or optimizer steps. Explained epoch (one pass), batch (examples per update),
+learning rate (update scale), clipping and patience. Synthetic copied-example
+memorization at lr=0.02 for 250 epochs does not establish decoding or held-out
+generalization, and none of those overrides entered real training.
+
+Wrote configs/gru_experiment.toml and the report's complete declaration before
+the first fit. The runner also saved an immutable timestamped declaration with
+code/config hashes and Git dirty state before fitting. Round 1: learning rates
+[0.001,0.003], seed 2026 for selection; unchanged hidden size 32, 96 channels,
+ten bins, batch 256, max 50 epochs, Adam betas 0.9/0.999, epsilon 1e-8,
+weight decay 0, gradient norm cap 1 and patience 8.
+No target scaling. Primary metric validation overall RMSE; earliest strict
+minimum epoch; lower learning rate within 1e-9 mm/s setting tie. Repeat only
+selected setting with predeclared seeds 2027/2028; representative seed always
+2026; report all seeds and mean/population std, never choose a best seed.
+Budget four fits/200 epochs/10,400 updates and shared 1,200-second deadline
+checked between epochs with current epoch allowed to finish. No added candidates.
+
+### Implemented and measured
+
+- scripts/train_gru.py: bounded declared round, verified Phase 2D training-only
+  scaler, unchanged train/validation preparation, frozen reference comparison,
+  all-seed reporting, trusted checkpoint roundtrips and full ignored provenance.
+- src/neurodecode/training.py: end-of-epoch train metrics in addition to online
+  MSE/validation metrics, optional between-epoch deadline and progress callback.
+  Retains default architecture, update/selection/reset semantics.
+- scripts/evaluate_baselines.py and src/neurodecode/plotting.py: fifth predictor
+  GRU in shared CSV and fixed-interval figure, retaining prior predictor styles.
+- scripts/audit_gru.py: artifact-only checksum/row/target/selection audit,
+  independent CSV RMSE/R² recalculation and saved-head output-range diagnostics.
+- tests/test_gru.py and tests/test_gru_experiment.py: nine added synthetic
+  checks for final-weight train metrics, budget behavior, settings ties and
+  saved-reference integrity/identity. Adapted existing snapshot test to observe
+  validation rather than the newly added training-metric calls.
+- reports/phase5b_gru.md plus five curated figures: declaration, every fit/seed,
+  full five-model axis metrics, learning curves, real example, diagnosis/limits.
+  Updated README, methods and decisions. No replay/video/latency work.
+
+Measured run runs/phase5b-gru-round1; all four fits completed 50 epochs each,
+no patience stop, no deadline limit, nothing planned left unrun. Whole
+preparation/training/export 85.422 seconds, not inference latency.
+Training [13070,10,96], validation [2775,10,96], 12,546 parameters.
+
+| Learning rate | Seed | Best epoch | Training overall RMSE | Validation overall RMSE |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.001 | 2026 | 49 | 59.098304 | 61.782268 |
+| 0.003 | 2026 | 50 | 40.647875 | 54.791919 |
+| 0.003 | 2027 | 50 | 40.842553 | 55.157982 |
+| 0.003 | 2028 | 49 | 41.971682 | 55.842133 |
+
+Selected lr=0.003 using seed 2026, saved selection before repeats. Three-seed
+overall validation RMSE mean 55.264011, population std 0.435254 mm/s;
+mean-R² mean 0.423946, population std 0.007784. All seeds underperform ridge.
+Representative GRU axis RMSE [58.990834,50.243310], overall 54.791919,
+R² [0.434111,0.433397], mean 0.433754. Frozen ridge overall 52.571380,
+Kalman 102.838507, zero 72.817486, training mean 72.817654. All score exactly
+2775 original targets, 1550.200–1605.680 s, with unchanged shared metrics/masks.
+The first eligible ten seconds [1550.200,1560.200), 500 rows, remains the plot
+interval; no smoothing, time shift or quality-based selection. All five plots
+were visually inspected for units, legends, selection markers and common timing.
+
+Representative training/validation gap 14.144044 mm/s; training falls faster,
+but validation still improves overall toward epoch cap. Generalization gap and
+possible overfitting, without proven sustained validation deterioration or
+convergence. Validation bias [0.574844,0.514901] mm/s, prediction spread
+[46.077351,39.541700] versus target spread [78.418539,66.748062].
+Saved head plus hidden-in-[-1,1] bounds imply output x [-163.347843,166.658504],
+y [-137.804769,134.351206] mm/s. Each axis has 192/2775 targets outside that
+range: this checkpoint cannot fit those extremes. It is a saved-weight limit,
+not an architectural constant or complete explanation of ridge's advantage.
+No unit/sequence/scoring defect found; no additional tuning or target rescaling.
+
+First validation row ID 13110 at 1550.200 s: [1,10,96] covering
+(1550.000,1550.200], h0 [1,1,32], final hidden [1,1,32], head [1,2].
+Representative prediction [-3.388826609,15.284593582], actual
+[14.162167438,3.788288106], signed error [-17.550994047,11.496305476] mm/s.
+Retained the first row despite its wrong x direction; labels enter scoring only.
+
+### Checks actually executed and outcomes
+
+Commands used the existing project environment directly, without changing it:
+
+~~~powershell
+.venv/Scripts/python.exe -u scripts/train_gru.py phase5b-gru-round1
+.venv/Scripts/python.exe scripts/audit_gru.py phase5b-gru-round1
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider tests/test_gru.py --tb=short -x
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider tests/test_gru.py tests/test_gru_experiment.py --tb=short -x
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider --tb=short
+.venv/Scripts/ruff.exe check --no-cache .
+.venv/Scripts/ruff.exe format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache sync --locked --offline --check
+git -c safe.directory=C:/Users/disar/projects/neuro-decode diff --check
+~~~
+
+Initial 26 GRU checks passed. Added tests initially failed collection because a
+cross-test fixture import omitted the tests namespace under importlib mode;
+fixed import, then 35 focused checks passed. Full suite 269 passed (260 retained
+plus nine new). Ruff initially flagged that import's ordering; fixed it and final
+lint/format passed (50 Python files). Offline lock consistency and environment
+sync check passed, with no changes needed. Git whitespace check passed.
+
+Every prior reference CSV timestamp, mask, source window endpoint and target
+matched newly prepared validation data exactly. Frozen reference metrics matched
+the shared scorer; selected ridge reload reproduced its predictions. Every GRU
+checkpoint reload reproduced validation outputs exactly. Artifact-only audit
+independently recomputed every GRU CSV's axis/overall RMSE and R² within 1e-12;
+all saved artifact hashes passed. A final check found all experiment source/config
+hashes still equal the actual run's provenance. Later audit code has its own hash.
+
+Source SHA and full split/scaler/channel/unit/target context are retained.
+Frozen scaler hash: 603aa299f0a1d75625acea41a18b9ecf56c58e4e0515ec8322ea1aa34abe68dd;
+eligible validation identity: 30446619fcf5a2d49ada8bff99ac8616247a255e13a68a7c4b1836171c9875c1.
+Validation labels are absent from normalization fitting, prediction inputs,
+backward and optimizer steps. Retained mutation/label-free tests pass; legitimate
+validation selection can affect saved epoch/stopping/settings, not gradients.
+No test windows/targets/predictions/metrics/plots were generated. Common loader
+still reads source/global metadata; no claim that test interval bytes were never
+loaded. No scientific result is a final test score.
+
+### Learning checkpoint, limitations and next increment
+
+Explained the real input/target/error, why selected epoch 50 follows the strict
+minimum rule, epoch-cap versus patience stopping, generalization gap versus a
+sustained validation rise, missed peaks and saved-weight output limits.
+Previously demonstrated hidden-state/weights and gradient-clipping distinctions
+remain recorded. Independent explanations of gates, optimization, validation
+selection versus learning, seed reporting and this result's limitations remain
+pending; no new mastery is claimed without the user's responses.
+
+Teach-back questions to ask at handoff: Why may validation choose epoch 50 but
+not supply gradients? What does training 40.65 versus validation 54.79 establish,
+and what does it not establish about extra epochs? Why must all three seeds and
+the fixed plot interval be retained when ridge performs better?
+
+Teach-back follow-up: correctly identified validation performance, rather than
+gradients, as the checkpoint-selection criterion. Correctly rejected the claim
+that the observed gap proves extra epochs would hurt, but inferred too strongly
+that continued improvement proves training should continue. Clarified that it
+only motivates a possible separately declared exploratory experiment; later
+validation improvement is not guaranteed and the completed budget stays fixed.
+Seed-reporting explanation remains pending. Explained that seeds change random
+initialization and training-window order; reporting only the best seed selects
+a lucky outcome and hides variability. All three runs and their mean/spread
+describe the declared procedure more honestly. No additional training authorized
+or performed by this learning follow-up.
+
+Unresolved: limited learned output scale/optimization versus training-specific
+fitting and temporal shift as causes; final test accuracy, cross-session quality,
+physical synchronization/tracker limitations, replay agreement and latency.
+No fresh-clone/cross-platform reproduction, new search round, robustness sweep,
+CI, trajectory integration or cursor video. Phase 5B implemented/verified locally;
+changes remain uncommitted. User runs Git; base/pushed checkpoint remains f405c15.
+Stop here. Next increment: **offline versus sequential replay equivalence with
+the same bounded-window resets, and measured processing latency before video**.

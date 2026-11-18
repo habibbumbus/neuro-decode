@@ -16,9 +16,10 @@ histories and frozen training-only channel normalization are implemented.
 Zero/training-mean velocity baselines and shared validation metrics are verified.
 Ridge regression is fitted and selected on validation. Kalman transition and
 neural observation parameters are fitted on training data, and causal filtering
-is evaluated on validation. GRU components are implemented and verified with
-synthetic data only; real-recording GRU training, final test evaluation and latency
-measurements remain planned. This independent project makes no clinical claims.
+is evaluated on validation. Phase 5B trains the GRU on real training data and
+compares three declared seeds on validation. Final test evaluation, sequential
+replay and latency measurements remain planned. This independent project makes
+no clinical claims.
 
 ## Experiment and evaluation plan
 
@@ -35,10 +36,11 @@ boundary gaps, and training-only preprocessing. Zero and training-mean baselines
 ridge regression, a linear Gaussian Kalman decoder, and a small unidirectional
 GRU will be compared on the same eligible timestamps using velocity R² and RMSE.
 Matched validation results are available: ridge overall RMSE 52.571 mm/s,
-Kalman 102.839 mm/s, versus about 72.817 mm/s for both trivial baselines.
-Kalman underperforms; these are development results, not final test performance.
-See the [comparison report](reports/phase4b_kalman.md). GRU scientific training
-and final test evaluation remain planned.
+GRU 54.792 mm/s (representative seed), Kalman 102.839 mm/s, versus about
+72.817 mm/s for both trivial baselines. The selected GRU setting's three seeds
+average 55.264 mm/s (population std 0.435). Ridge remains best in this bounded
+experiment. These are development results, not final test performance.
+See the [GRU comparison and learning curves](reports/phase5b_gru.md).
 
 A later visual replay will compare actual and decoded cursor trajectories,
 with decoded position obtained by integrating predicted velocity from a labeled
@@ -246,7 +248,31 @@ snapshot selection. The command exercises them on a tiny synthetic mapping,
 without loading the recording. Synthetic memorization is not scientific accuracy.
 Checkpoint and verification metadata stay under ignored runs/phase5a-review/;
 use a new run ID to preserve earlier outputs. See [methods](docs/methods.md).
-Real-recording GRU experiments are deferred to Phase 5B.
+The synthetic memorization result establishes mechanics only. Real-recording
+Phase 5B results and their separate predeclared plan are described below.
+
+## Train and validate the GRU on the recording
+
+~~~powershell
+uv run --locked python scripts/train_gru.py phase5b-review
+uv run --locked python scripts/audit_gru.py phase5b-review
+~~~
+
+Use a new run ID. Requires the existing verified recording, Phase 2D scaler,
+selected Phase 3B ridge and Phase 4B audited reference predictions under runs/.
+The fixed round in configs/gru_experiment.toml compares learning rates 0.001
+and 0.003 at seed 2026, then repeats only the selected setting at seeds 2027/2028.
+Maximum four fits / 200 epochs / 20 minutes checked between epochs. Architecture,
+batch size, normalization, target units, clipping and patience retain Phase 5A
+defaults. Training/validation metrics by epoch, all seed predictions/checkpoints
+and complete provenance remain ignored under runs/. The artifact-only audit
+recomputes CSV metrics and checks saved hashes/selection/output bounds.
+
+All models score the identical 2,775 eligible validation rows and fixed first
+ten-second trace. No test examples or scores are constructed. See the
+[complete plan/results](reports/phase5b_gru.md) for selection, every seed,
+learning curves, generalization gap and missed-peak diagnosis. Offline versus
+sequential replay agreement and processing latency are the next increment.
 
 ## Setup
 
@@ -414,6 +440,6 @@ documented in the dataset card. Chronological partitions and timing are specifie
 implemented alongside causal histories and training-only normalization. Validation
 baseline evaluation and ridge fitting/selection are implemented, together with
 training-only Kalman parameter diagnostics and causal validation filtering.
-GRU components pass synthetic-only checks; real GRU training and final test
-evaluation remain planned.
+GRU components pass synthetic checks, and real training/validation experiments
+are complete for the declared Phase 5B round. Final test evaluation stays closed.
 A license for this project's code has not been chosen.

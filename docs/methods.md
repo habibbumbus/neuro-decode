@@ -1257,5 +1257,60 @@ code/configuration/checkpoint hashes, environment, Git commit/dirty status and
 whole-run duration, not latency. Synthetic success proves training-path mechanics,
 not neural decoding accuracy. See progress for actual checks/results.
 
-Next: Phase 5B, predeclare a small set of real-training configurations and compare
-on the unchanged validation population against ridge, Kalman and trivial baselines.
+Phase 5B now uses these components on the unchanged real-data validation
+population, as documented below. The synthetic settings remain separate.
+
+## Phase 5B: bounded real-data GRU experiment
+
+Round 1 is predeclared in configs/gru_experiment.toml and the
+[model report](../reports/phase5b_gru.md), before any real GRU fit. Retain H32,
+96 channels, ten bins, one unidirectional layer and a two-output linear head,
+zero hidden state per window, CPU float32, batch 256, unscaled mm/s targets,
+Adam betas 0.9/0.999, epsilon 1e-8, weight decay 0, gradient norm cap 1,
+patience 8 and maximum 50 epochs. Compare learning rates [0.001,0.003] with
+seed 2026. Restore earliest strict minimum validation overall RMSE per run.
+Settings within absolute 1e-9 mm/s of the minimum tie; lower learning rate wins.
+Then run only the selected setting with predeclared seeds 2027 and 2028.
+Seed 2026 is the representative checkpoint/trace irrespective of repeat scores.
+Report every seed and arithmetic mean/population standard deviation of scores.
+
+Budget: at most four fits, 200 epochs, 10,400 updates. One shared 1,200-second
+training deadline is checked before epochs; a current epoch may finish. Mark
+deadline-limited fits incomplete and later fits unrun, without extending budget.
+Only completed selection candidates can select settings. No candidates were
+added after results; all four fits actually completed 50 epochs each.
+
+scripts/train_gru.py verifies recording/source/split/timing, prepares training
+and validation only, restores Phase 2D's frozen scaler and verifies it against
+a training-only refit. It verifies all Phase 4B reference CSV bytes, channel/unit
+mapping, targets, timestamps, masks and source window endpoints before reuse.
+The selected ridge model independently reproduces its saved predictions.
+Every model uses evaluate_velocity on the same 2775 eligible validation rows.
+No normalization, optimizer or prediction inputs consume validation labels;
+validation legitimately chooses snapshots, stopping and learning rate.
+No test examples, predictions, scores or plots are constructed. As before,
+source/global metadata loading reads the acquired recording's bytes.
+
+fit_gru now also retains end-of-epoch training metrics at frozen epoch weights,
+in addition to online batch MSE and validation metrics. The online MSE is not
+the end-of-epoch MSE. Optional deadline/callback arguments do not change default
+optimizer/selection semantics. Every run saves history, effective settings,
+trusted checkpoint, checkpoint reload equality, seed, metrics/diagnostics,
+timestamped predictions and learning curves. Parent metadata bind source/split,
+transforms/mappings, immutable declaration, setting selection before repeats,
+versions, Git commit/dirty state and actual implementation/artifact hashes.
+
+The fixed comparison plot remains first eligible ten validation seconds,
+[1550.200,1560.200), 500 rows, no smoothing or shift. The shared plot/exporter
+now accept GRU as a fifth predictor. scripts/audit_gru.py reads only saved local
+artifacts, verifies recorded hashes and all seed row/target identities, checks
+earliest minimum selection, independently recomputes CSV metrics, and reports
+bias +/- sum(abs(head weights)) output bounds implied by hidden values in [-1,1].
+That is a bound for saved weights, not a fixed limit of all H32 models.
+
+Selected lr=0.003; representative validation overall RMSE 54.791919 mm/s;
+three-seed mean 55.264011, population std 0.435254. Ridge's 52.571380 remains
+better. Report retains the underperformance, generalization gap and narrow
+prediction spread, without a new tuning round. Validation is development data;
+test stays closed. Next increment: offline/sequential replay equivalence and
+processing latency before the cursor video.

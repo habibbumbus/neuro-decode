@@ -162,3 +162,23 @@ PyTorch index on Windows/Linux and PyPI fallback on macOS.
 Phase 5A verifies synthetic mechanics only. Its overfit fixture deliberately
 copies examples for validation wiring and makes no generalization claim.
 Real-data candidate declarations, training and matched comparison are Phase 5B.
+
+## 2026-11-17 — Bounded real-data GRU round and all-seed reporting
+
+Declare learning rates [0.001,0.003] before recording training; retain the actual
+Phase 5A H32/reset/CPU/optimizer/batching defaults. Use seed 2026 for setting
+selection, minimum validation overall RMSE with lower rate within 1e-9 mm/s as
+tie-break; retain earliest strict minimum epoch, patience 8, maximum 50 epochs.
+Then repeat only the selected setting with seeds 2027/2028. Report all seeds
+and mean/population standard deviation; use seed 2026 for the representative
+trace instead of selecting a seed. Budget four fits / 200 epochs / 10,400
+updates and a shared 20-minute deadline checked between epochs. No target
+scaling, synthetic memorization settings, new architecture or extra candidates.
+
+All fits completed within budget. lr=0.003 selected; all three seeds remain
+worse than ridge on identical validation targets. Preserve the result. A
+generalization gap, limited prediction spread and saved-head output bounds
+explain some observed limitations without proving a single cause. Validation
+still improves overall near the epoch cap, so do not claim convergence or a
+proven sustained overfitting onset. Keep final test closed. Next increment
+verifies offline/sequential replay and measures processing latency before video.

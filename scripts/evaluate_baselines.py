@@ -51,6 +51,7 @@ def write_predictions(
         "Training mean": "mean",
         "Ridge": "ridge",
         "Kalman": "kalman",
+        "GRU": "gru",
     }
     for prediction in predictions.values():
         evaluate_velocity(labels, prediction)

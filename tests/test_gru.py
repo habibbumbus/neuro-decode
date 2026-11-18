@@ -197,6 +197,39 @@ def test_seeded_training_repeat_and_caller_runtime_are_preserved():
     assert torch.equal(torch.random.get_rng_state(), random_state)
 
 
+def test_epoch_training_metrics_describe_the_same_final_weights():
+    result, scaler, training, _ = fit_fixture(GRUTrainingConfig(max_epochs=1))
+    from neurodecode.evaluation import evaluate_velocity
+
+    measured = evaluate_velocity(
+        targets_from_windows(training),
+        result.model.predict(gru_inputs(training, scaler)),
+    )
+    assert result.history[0]["training_metrics"] == measured
+
+
+def test_deadline_preserves_finished_epoch_and_refuses_empty_run(monkeypatch):
+    import neurodecode.training as training_module
+
+    scaler, training, validation = synthetic()
+    args = (
+        gru_inputs(training, scaler),
+        targets_from_windows(training),
+        gru_inputs(validation, scaler),
+        targets_from_windows(validation),
+        scaler,
+        GRUConfig(8),
+        GRUTrainingConfig(max_epochs=10),
+    )
+    clock = iter([0.0, 2.0])
+    monkeypatch.setattr(training_module, "monotonic", lambda: next(clock))
+    result = fit_gru(*args, deadline_monotonic=1.0)
+    assert len(result.history) == 1 and result.best_epoch == 1
+    monkeypatch.setattr(training_module, "monotonic", lambda: 2.0)
+    with pytest.raises(TimeoutError, match="before first epoch"):
+        fit_gru(*args, deadline_monotonic=1.0)
+
+
 def test_validation_labels_cannot_change_one_epoch_training_weights_or_transform():
     scaler, training, validation = synthetic()
     args = (
@@ -228,7 +261,8 @@ def test_earliest_best_validation_snapshot_is_restored_and_patience_stops(monkey
 
     class TrackingModel(GRUDecoder):
         def predict(self, *args, **kwargs):
-            snapshots.append({k: v.clone() for k, v in self.state_dict().items()})
+            if args[0].index.partition == "validation":
+                snapshots.append({k: v.clone() for k, v in self.state_dict().items()})
             return super().predict(*args, **kwargs)
 
     original = training_module.evaluate_velocity
@@ -236,7 +270,8 @@ def test_earliest_best_validation_snapshot_is_restored_and_patience_stops(monkey
 
     def score(*args):
         metrics = original(*args)
-        metrics["overall_rmse_mm_s"] = next(scores)
+        if args[0].index.partition == "validation":
+            metrics["overall_rmse_mm_s"] = next(scores)
         return metrics
 
     monkeypatch.setattr(training_module, "GRUDecoder", TrackingModel)

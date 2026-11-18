@@ -2,6 +2,8 @@
 
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from time import monotonic
+from typing import Callable
 
 import numpy as np
 import torch
@@ -150,11 +152,14 @@ def fit_gru(
     scaler: FrozenCountScaler,
     model_config: GRUConfig,
     config: GRUTrainingConfig,
+    *,
+    deadline_monotonic: float | None = None,
+    epoch_callback: Callable[[dict], None] | None = None,
 ) -> GRUTrainingResult:
     """Fit training only; validation selects a snapshot but never receives gradients.
 
-    Phase 5A exercises this function only with explicitly synthetic data.
-    Real-recording experiments and their predeclared candidate list are Phase 5B.
+    Optional deadline is checked between epochs, never interrupting an update.
+    Real-recording candidate declarations belong to the Phase 5B runner.
     """
     config.validate()
     model_config.validate()
@@ -185,6 +190,8 @@ def fit_gru(
         best_score, best_state, best_epoch, stale = float("inf"), None, 0, 0
         history = []
         for epoch in range(1, config.max_epochs + 1):
+            if deadline_monotonic is not None and monotonic() >= deadline_monotonic:
+                break
             order = torch.randperm(len(x), generator=generator)
             total_loss, max_norm = 0.0, 0.0
             for start in range(0, len(x), config.batch_size):
@@ -198,14 +205,20 @@ def fit_gru(
             predictions = model.predict(validation, config.batch_size)
             metrics = evaluate_velocity(validation_targets, predictions)
             score = metrics["overall_rmse_mm_s"]
+            training_metrics = evaluate_velocity(
+                training_targets, model.predict(training, config.batch_size)
+            )
             history.append(
                 {
                     "epoch": epoch,
                     "training_online_mse_mm2_s2": total_loss / len(x),
                     "validation_metrics": metrics,
+                    "training_metrics": training_metrics,
                     "maximum_gradient_norm_before_clip": max_norm,
                 }
             )
+            if epoch_callback is not None:
+                epoch_callback(history[-1])
             if score < best_score - config.minimum_improvement_mm_s:
                 best_score, best_epoch, stale = score, epoch, 0
                 best_state = {
@@ -215,6 +228,8 @@ def fit_gru(
                 stale += 1
             if stale >= config.patience:
                 break
+        if best_state is None:
+            raise TimeoutError("Training deadline expired before first epoch")
         model.load_state_dict(best_state, strict=True)
         model.eval()
     return GRUTrainingResult(
