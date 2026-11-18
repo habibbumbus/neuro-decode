@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+  <title id="title">NeuroDecode — From neural spikes to cursor velocity</title>
+  <desc id="desc">A dark blue banner with a stylized spike raster, a decoder, and a two-dimensional velocity trace. This is a conceptual illustration, not measured data.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#091426"/>
+      <stop offset="1" stop-color="#142b46"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#8eb4d8" stroke-opacity=".06"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="340" rx="20" fill="url(#bg)"/>
+  <rect width="1200" height="340" rx="20" fill="url(#grid)"/>
+  <rect x="48" y="43" width="4" height="20" rx="2" fill="#55e6ce"/>
+  <text x="65" y="59" fill="#83e9d8" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="3">NEURAL DECODING / RECORDED DATA</text>
+  <text x="45" y="130" fill="#f1f6ff" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700" letter-spacing="-2">NeuroDecode</text>
+  <text x="48" y="174" fill="#b8cee2" font-family="Arial, Helvetica, sans-serif" font-size="24">From neural spikes to cursor velocity.</text>
+  <text x="48" y="220" fill="#91aac4" font-family="Arial, Helvetica, sans-serif" font-size="16">Ridge regression. Kalman filtering. A causal GRU.</text>
+  <path d="M48 251H523" stroke="#314960"/>
+  <text x="48" y="282" fill="#e0edf8" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="1">96 CHANNELS</text>
+  <text x="228" y="282" fill="#e0edf8" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="1">20 ms BINS</text>
+  <text x="389" y="282" fill="#e0edf8" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="1">2D VELOCITY</text>
+  <g fill="none" stroke="#55e6ce" stroke-width="3" stroke-linecap="round">
+    <path d="M654 92v15m19-15v15m39-15v15m12-15v15m47-15v15M641 123v15m51-15v15m27-15v15m38-15v15M658 154v15m19-15v15m21-15v15m49-15v15m21-15v15M640 185v15m39-15v15m42-15v15m13-15v15m37-15v15M652 216v15m17-15v15m42-15v15m25-15v15m20-15v15"/>
+  </g>
+  <path d="M795 161h35m-7-6 7 6-7 6m89-6h35m-7-6 7 6-7 6" fill="none" stroke="#91aac4" stroke-width="2"/>
+  <rect x="843" y="122" width="56" height="78" rx="12" fill="#55e6ce" fill-opacity=".08" stroke="#55e6ce"/>
+  <g fill="#83e9d8">
+    <circle cx="861" cy="144" r="3"/><circle cx="881" cy="144" r="3"/>
+    <circle cx="861" cy="161" r="3"/><circle cx="881" cy="161" r="3"/>
+    <circle cx="861" cy="178" r="3"/><circle cx="881" cy="178" r="3"/>
+  </g>
+  <g stroke="#83e9d8" stroke-opacity=".6">
+    <path d="m861 144 20 17-20 17m20-34-20 17 20 17" fill="none"/>
+  </g>
+  <path d="M971 94v138h174" fill="none" stroke="#3f5975" stroke-width="2"/>
+  <path d="M982 195c16 0 15-72 35-72s17 88 35 88 15-64 32-64 23 38 51-31" fill="none" stroke="#7eb4ff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M982 171c17 23 24 27 37 9s24-20 37 1 20 15 33-11 30-26 46-19" fill="none" stroke="#55e6ce" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#91aac4" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" letter-spacing="1">
+    <text x="705" y="265">SPIKE COUNTS</text>
+    <text x="871" y="265">DECODER</text>
+    <text x="1058" y="265">VELOCITY x / y</text>
+    <text x="891" y="310" font-size="10" fill="#718ca8">CONCEPTUAL SIGNAL ILLUSTRATION</text>
+  </g>
+</svg>

@@ -1,445 +1,256 @@
-# NeuroDecode
+<a id="top"></a>
 
-A project to estimate two-dimensional cursor velocity from recorded
-motor-cortex spike activity. The planned comparison is ridge regression, a linear
-Gaussian Kalman decoder, and a small causal GRU, followed by recorded-data replay
-and controlled robustness experiments.
+<p align="center">
+  <img src="docs/assets/neurodecode-banner.svg" alt="NeuroDecode — From neural spikes to cursor velocity. Ridge regression, Kalman filtering, and a causal GRU." width="100%">
+</p>
 
-**Status:** Project definition and minimal packaging are committed. Phase 0C
-development checks and temporary-environment installation passed on Windows.
-One Indy recording from Zenodo v1 has been acquired and checksum-verified;
-the raw schema and minimal loader are validated. An early recorded-data figure
-and a source-bound chronological split/timing plan are available. Causal
-20 ms channel counts are implemented and verified on training data.
-Aligned cursor-velocity targets use actual sample elapsed time. Causal ten-bin
-histories and frozen training-only channel normalization are implemented.
-Zero/training-mean velocity baselines and shared validation metrics are verified.
-Ridge regression is fitted and selected on validation. Kalman transition and
-neural observation parameters are fitted on training data, and causal filtering
-is evaluated on validation. Phase 5B trains the GRU on real training data and
-compares three declared seeds on validation. Final test evaluation, sequential
-replay and latency measurements remain planned. This independent project makes
-no clinical claims.
+<p align="center">
+  <strong>Can a small neural network beat a well-built linear decoder?</strong><br>
+  Explore movement decoding from real motor-cortex recordings, with reproducible experiments and visible results.
+</p>
 
-## Experiment and evaluation plan
+<p align="center">
+  <a href="#results">See the results</a> &nbsp;·&nbsp;
+  <a href="#quickstart">Get started</a> &nbsp;·&nbsp;
+  <a href="#reproduce-the-comparison">Run the comparison</a> &nbsp;·&nbsp;
+  <a href="docs/methods.md">Explore the methods</a>
+</p>
 
-In the original reaching experiment, a monkey moves its hand while a position
-tracker controls a cursor and implanted electrodes record motor-cortex spikes.
-These are intracortical recordings, not scalp EEG. NeuroDecode will learn from
-these paired recordings afterward: causal spike-count histories are decoder
-inputs, tracker-derived velocity supplies training and scoring labels, and the
-output is predicted x/y cursor velocity. Held-out movement labels will not be
-fed into the decoder.
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&amp;logo=python&amp;logoColor=white" alt="Python 3.11"></a>
+  <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-GRU-EE4C2C?style=for-the-badge&amp;logo=pytorch&amp;logoColor=white" alt="PyTorch — GRU"></a>
+  <a href="https://scikit-learn.org/"><img src="https://img.shields.io/badge/scikit--learn-Ridge-F7931E?style=for-the-badge&amp;logo=scikitlearn&amp;logoColor=white" alt="scikit-learn — ridge regression"></a>
+  <br>
+  <a href="https://numpy.org/"><img src="https://img.shields.io/badge/NumPy-Numerics-013243?style=flat-square&amp;logo=numpy&amp;logoColor=white" alt="NumPy"></a>
+  <a href="https://www.h5py.org/"><img src="https://img.shields.io/badge/h5py-Recording_IO-1565C0?style=flat-square" alt="h5py — recording I/O"></a>
+  <a href="https://matplotlib.org/"><img src="https://img.shields.io/badge/Matplotlib-Figures-11557C?style=flat-square" alt="Matplotlib"></a>
+  <a href="https://docs.astral.sh/uv/"><img src="https://img.shields.io/badge/uv-Locked_environment-DE5FE9?style=flat-square&amp;logo=uv&amp;logoColor=white" alt="uv — locked environment"></a>
+  <a href="https://docs.pytest.org/"><img src="https://img.shields.io/badge/pytest-Component_tests-0A9EDC?style=flat-square&amp;logo=pytest&amp;logoColor=white" alt="pytest — component tests"></a>
+  <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/Ruff-Lint_%26_format-D7FF64?style=flat-square&amp;logo=ruff&amp;logoColor=black" alt="Ruff — lint and format"></a>
+</p>
 
-The planned evaluation uses chronological train/validation/test partitions,
-boundary gaps, and training-only preprocessing. Zero and training-mean baselines,
-ridge regression, a linear Gaussian Kalman decoder, and a small unidirectional
-GRU will be compared on the same eligible timestamps using velocity R² and RMSE.
-Matched validation results are available: ridge overall RMSE 52.571 mm/s,
-GRU 54.792 mm/s (representative seed), Kalman 102.839 mm/s, versus about
-72.817 mm/s for both trivial baselines. The selected GRU setting's three seeds
-average 55.264 mm/s (population std 0.435). Ridge remains best in this bounded
-experiment. These are development results, not final test performance.
-See the [GRU comparison and learning curves](reports/phase5b_gru.md).
+---
 
-A later visual replay will compare actual and decoded cursor trajectories,
-with decoded position obtained by integrating predicted velocity from a labeled
-known initial position. It will be labeled as offline replay of held-out neural
-recordings. Velocity scores will remain primary; playback speed will not be
-presented as inference latency. Recorded-data results will not establish live
-closed-loop control, human performance, or clinical usability.
+## The idea
 
-See the [project brief](docs/project_brief.md) for timing, evaluation, replay,
-and limitations, and [progress](docs/progress.md) for verified repository state.
+NeuroDecode learns to estimate **x/y cursor velocity from recorded neural spikes**.
+One public reaching session, three decoder families, and the same scoring timestamps:
+a compact experiment in how model complexity translates into decoding accuracy.
 
-## Load the acquired recording
+| 🧠 Real neural recordings | ⚖️ Three ways to decode | 🔍 Inspect every step |
+| :--- | :--- | :--- |
+| 96 motor-cortex channels from a public nonhuman-primate reaching task. | Ridge regression, a NumPy Kalman filter, and a 12,546-parameter PyTorch GRU. | Source checksums, chronological splits, frozen preprocessing, and saved prediction audits. |
 
-After setup and [verified acquisition](docs/dataset.md), run:
+In the original experiment, a monkey's tracked hand movement controlled the cursor
+while implanted electrodes recorded spikes. Here, the recordings are decoded
+afterward. Tracker-derived velocity supplies the training and scoring labels.
 
-```powershell
-uv run --locked python scripts/inspect_recording.py data/raw/indy_20161005_06.mat
+## Results
+
+**Ridge leads this experiment: 27.8% lower validation RMSE than the zero-velocity baseline.**
+The GRU beats the trivial baselines, but all three declared seeds trail ridge.
+
+| Decoder | Overall RMSE ↓ (mm/s) | Mean R² ↑ | Explore |
+| :--- | ---: | ---: | :--- |
+| **Ridge regression** | **52.571** | **0.480** | [Fit and selection](reports/phase3b_ridge.md) |
+| Causal GRU · seed 2026 | 54.792 | 0.434 | [All seeds and learning curves](reports/phase5b_gru.md) |
+| Zero velocity | 72.817 | ≈ 0 | [Baseline report](reports/phase3a_baselines.md) |
+| Training-mean velocity | 72.818 | ≈ 0 | [Baseline report](reports/phase3a_baselines.md) |
+| Linear Gaussian Kalman | 102.839 | −1.103 | [Filter diagnostics](reports/phase4b_kalman.md) |
+
+All five predictors score the **same 2,775 eligible validation rows** from one
+recording. Validation selects model settings and GRU checkpoints; these are
+**development results**. Final test evaluation remains unopened.
+The selected GRU setting averages **55.264 ± 0.435 mm/s** across seeds 2026–2028
+(mean ± population standard deviation).
+
+<a href="reports/phase5b_gru.md">
+  <img src="reports/figures/phase5b_validation_velocity.png" alt="First fixed ten-second validation interval: measured x/y velocity and predictions from the baselines, ridge, Kalman, and GRU. Click for the full report." width="100%">
+</a>
+
+<details>
+<summary><strong>Read the plot and understand the scores</strong></summary>
+
+The figure uses the fixed first ten seconds of eligible validation time, with no
+smoothing or time shift. The table scores the full validation partition.
+Lower RMSE means smaller velocity errors; mean R² averages the two axis scores.
+A negative R² means the decoder performs worse than predicting that axis's
+validation mean.
+
+The GRU's seed spread measures initialization and training-order variability,
+not variation across sessions or subjects. It is not a confidence interval.
+See the [full comparison](reports/phase5b_gru.md) for missed peaks,
+generalization gaps, and every declared run.
+
+</details>
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[Recorded M1 spikes] --> B[Causal 20 ms counts]
+    B --> C[Training-fitted normalization]
+    C --> D[Ridge · 10-bin history]
+    C --> E[Kalman · current bin + filter state]
+    C --> F[GRU · 10-bin history]
+    D --> G[x/y velocity · mm/s]
+    E --> G
+    F --> G
+    G --> H[Shared validation scoring]
+    I[Tracker-derived velocity labels] -.-> H
 ```
 
-The summary reports original movement samples, channel/unit spike events, timing,
-empty trains, and coverage differences. The loader preserves raw events and does
-not bin spikes, derive velocity, or prepare evaluation splits. Tests generate
-small synthetic HDF5 fixtures; real recordings remain outside tests and Git.
+The pipeline splits time **70 / 15 / 15** before building examples, leaves boundary
+gaps, and fits preprocessing only on training data. Each prediction estimates
+velocity for the just-completed bin. Held-out movement labels enter scoring;
+they do not enter decoder inference. [Timing and causality contract →](docs/methods.md)
 
-## Plot an early recorded interval
+## Quickstart
 
-```powershell
-uv run --locked python scripts/plot_recording.py phase1c-review
-```
+**Python 3.11 · uv 0.12.23 · CPU-first**
 
-This generates a spike raster, cursor positions versus time, and an x-y trajectory
-from a fixed early ten-second interval. Output PNG/JSON files stay under ignored
-`runs/phase1c-review/`. Choose a new folder name for another run; existing outputs
-are preserved. No predictions or signal shifts are used. See the
-[dataset card](docs/dataset.md) for selection rules, gap policy, and limitations.
+<details open>
+<summary><strong>Windows PowerShell</strong></summary>
 
-## Plan chronological partitions
-
-```powershell
-uv run --locked python scripts/plan_splits.py
-```
-
-The command verifies recording bytes and saves a small reproducible specification
-under data/splits/. See [methods](docs/methods.md) for the 20 ms timing contract,
-70/15/15 elapsed-time split, purge gaps, warm-up, and endpoint rules. It uses
-timestamp/coverage metadata, not held-out movement patterns. Exact eligible
-feature indices are not generated by this planning command; the later count,
-target and feature commands below construct eligible rows.
-
-## Bin training spike events
-
-~~~powershell
-uv run --locked python scripts/bin_recording.py
-~~~
-
-The command verifies source/configuration/split identity, constructs complete
-20 ms bins inside retained training segments, and prints shape, conservation,
-and a fixed early example. Counts aggregate all source unit slots into each
-ordered M1 channel. Arrays remain in memory; no processed cache is saved or
-reused. See [methods](docs/methods.md) for exact edges, gap and aggregation rules.
-The no-flag command constructs counts only. Use the feature audit below for
-histories and normalization; models remain unimplemented.
-
-## Audit aligned cursor velocity
-
-~~~powershell
-uv run --locked python scripts/bin_recording.py --targets
-~~~
-
-This reuses the verified recording/split contract and prints valid target counts
-and rejection reasons per partition, with position/velocity examples from fixed
-early training rows only. Targets use past-or-present positions divided by their
-actual elapsed seconds; this explicitly supersedes the earlier fixed 20 ms
-denominator proposal. Original count rows and bin IDs remain intact, with one
-shared validity mask for paired counts/labels. Arrays remain in memory. See
-[methods](docs/methods.md) for sampling limits, warm-up and rejection rules.
-
-## Build causal histories and training-only transforms
-
-~~~powershell
-uv run --locked python scripts/bin_recording.py --features
-~~~
-
-This reuses the count and target implementations, checks original bin identities,
-and builds oldest-to-newest ten-bin histories independently inside each partition
-and continuous segment. Raw counts stay available separately. Training X is
-[13070, 10, 96], y is [13070, 2] mm/s, and reversible flattening gives [13070, 960].
-A zero count is valid; missing or quality-invalid bins break a history.
-
-Per-channel means/population standard deviations are fitted over unique valid
-training bins once, including warm-up source bins. Frozen statistics transform
-all partitions; validation/test cannot update them. Constant training channels
-use scale 1 and retain their identities. Targets remain in mm/s.
-
-The command prints aggregate held-out eligibility/shapes and three fixed early
-training examples. It saves only small scaler metadata under ignored
-runs/phase2d/count_scaler.json; no bulk arrays are persisted or reused. Identical
-reruns are allowed; different existing metadata are preserved with a clear error.
-See [methods](docs/methods.md) for eligibility, formulas, metadata and the
-distinction between offline training fit and causal use of a frozen scaler.
-
-Run all component checks:
-
-~~~powershell
-uv run --locked pytest
-uv run --locked ruff check .
-uv run --locked ruff format --check .
-~~~
-
-## Evaluate trivial velocity baselines on validation
-
-~~~powershell
-uv run --locked python scripts/evaluate_baselines.py phase3a-review
-~~~
-
-Use a new run directory name; existing runs are preserved. This reuses the
-Phase 2D examples, freezes a training-only mean velocity, generates both
-predictions without validation labels as inputs, then scores all 2775 eligible
-validation rows. The test partition is not predicted, plotted or scored.
-
-Ignored run outputs contain effective configuration/provenance, metrics,
-timestamped predictions and a fixed first-ten-second validation velocity plot.
-These are constant baselines, not neural decoders. Overall validation RMSE is
-about 72.82 mm/s for both; full axis scores, provenance and limitations are in
-the [validation report](reports/phase3a_baselines.md). No final test claim follows.
-
-## Fit and select ridge regression on validation
-
-~~~powershell
-uv sync --locked
-uv run --locked python scripts/train_ridge.py phase3b-review
-~~~
-
-Use a new run directory name. The command reuses existing preparation, frozen
-training-only normalization, oldest-first [10,96] → [960] flattening and shared
-scoring. It fits six predeclared lambda candidates only on training, selecting
-the smallest overall validation RMSE with the documented tie-break.
-No test targets/windows, predictions or scores are produced.
-
-Selected lambda=1000 achieves overall validation RMSE 52.571 mm/s and mean
-R² 0.480, versus 72.817 mm/s and near-zero R² for trivial baselines on the same
-2775 examples. These are development validation results, not final test scores.
-See the [ridge report](reports/phase3b_ridge.md) for all candidates, axis metrics,
-provenance, the first prediction and limitations.
-
-Ignored run outputs include explicit JSON model parameters/frozen transform,
-effective configuration and identities, timestamped predictions, scores and
-the same fixed first-ten-second validation plot. Save/load prediction equality
-is checked. Existing runs are preserved.
-
-## Fit Kalman parameters on training data
-
-~~~powershell
-uv run --locked python scripts/fit_kalman.py phase4a-review
-~~~
-
-Use a new run name. This reuses verified preparation and the frozen training
-transform, fitting two-dimensional velocity dynamics and a current-bin
-96-channel neural observation model. Only valid consecutive training pairs
-within a session/segment contribute transitions. No filtering or Kalman
-validation/test predictions are produced.
-
-The verified fit uses 13070 observation/state rows and 13069 transitions.
-All matrices are finite; Q and the training initial covariance need no jitter.
-Diagonal R retains all channels and floors 11 constant-channel variances at
-1e-8. Its condition number is about 1e8; Phase 4B checks numerical filtering
-below. See the [parameter diagnostics](reports/phase4a_kalman_fit.md)
-and [methods](docs/methods.md) for the assumptions and precise rules.
-
-Ignored run outputs contain fitted matrices, the training-derived prior and
-reset policy, configuration/identities, covariance diagnostics and provenance.
-The evaluation command below reuses these frozen parameters.
-
-## Evaluate the frozen Kalman filter
-
-~~~powershell
-uv run --locked python scripts/evaluate_kalman.py phase4b-review
-~~~
-
-This loads the existing Phase 4A Kalman and selected Phase 3B ridge artifacts,
-uses the same prepared validation rows and training-fitted scaler, and saves
-four-model metrics, predictions, reset/covariance diagnostics and a fixed ten-second
-plot under ignored runs/phase4b-review/. A new run ID preserves earlier output.
-Default fitted runs are runs/phase4a-kalman-fit and runs/phase3b-ridge; optional
---kalman-run and --ridge-run arguments select equivalent saved local runs.
-If these artifacts are absent in a new checkout, run the documented training
-commands first. No held-out labels enter the filter, and test scoring stays closed.
-See [methods](docs/methods.md) for reset/warm-up and missing-bin policies.
-
-
-## Verify GRU components with synthetic data only
-
-~~~powershell
-uv sync --locked
-uv run --locked python scripts/check_gru.py phase5a-review
-uv run --locked pytest tests/test_gru.py
-~~~
-
-The locked setup installs CPU PyTorch on Windows/Linux; macOS uses PyPI.
-The implemented model is one unidirectional GRU with 32 hidden values and a
-linear two-velocity head (12546 parameters for 96 channels). Each independent
-10-bin window starts from zero hidden state; later replay must use this same rule.
-The training components provide MSE, Adam, gradient clipping and best-validation
-snapshot selection. The command exercises them on a tiny synthetic mapping,
-without loading the recording. Synthetic memorization is not scientific accuracy.
-Checkpoint and verification metadata stay under ignored runs/phase5a-review/;
-use a new run ID to preserve earlier outputs. See [methods](docs/methods.md).
-The synthetic memorization result establishes mechanics only. Real-recording
-Phase 5B results and their separate predeclared plan are described below.
-
-## Train and validate the GRU on the recording
-
-~~~powershell
-uv run --locked python scripts/train_gru.py phase5b-review
-uv run --locked python scripts/audit_gru.py phase5b-review
-~~~
-
-Use a new run ID. Requires the existing verified recording, Phase 2D scaler,
-selected Phase 3B ridge and Phase 4B audited reference predictions under runs/.
-The fixed round in configs/gru_experiment.toml compares learning rates 0.001
-and 0.003 at seed 2026, then repeats only the selected setting at seeds 2027/2028.
-Maximum four fits / 200 epochs / 20 minutes checked between epochs. Architecture,
-batch size, normalization, target units, clipping and patience retain Phase 5A
-defaults. Training/validation metrics by epoch, all seed predictions/checkpoints
-and complete provenance remain ignored under runs/. The artifact-only audit
-recomputes CSV metrics and checks saved hashes/selection/output bounds.
-
-All models score the identical 2,775 eligible validation rows and fixed first
-ten-second trace. No test examples or scores are constructed. See the
-[complete plan/results](reports/phase5b_gru.md) for selection, every seed,
-learning curves, generalization gap and missed-peak diagnosis. Offline versus
-sequential replay agreement and processing latency are the next increment.
-
-## Setup
-
-Python 3.11 is the supported compatibility target for this checkpoint;
-compatibility with other Python versions has not been tested. Use uv 0.12.23.
-Runtime dependencies are NumPy/h5py for loading, Matplotlib for figures and
-scikit-learn 1.7 for ridge fitting (including its resolved SciPy requirements).
-Existing pytest and Ruff development configuration is retained; model/training
-dependencies will be added only when needed.
-
-### What the setup files do
-
-- `pyproject.toml` describes the package, Python compatibility, dependencies,
-  and Hatchling build configuration. It explicitly locates the package under
-  `src/neurodecode/`.
-- `.python-version` selects Python 3.11 for uv. The launcher/system Python used
-  to install uv may be a different version.
-- `uv.lock` records resolved dependency versions and hashes. Keep it in Git
-  and let uv generate changes; do not edit it by hand. Build-backend requirements
-  are declared separately in `pyproject.toml` and may require a download.
-- `.venv/` is the local Python environment. Keep it out of Git and recreate it
-  from the project configuration and lockfile on another machine.
-- An editable install connects the environment to `src/neurodecode/`, so
-  Python source edits take effect without reinstalling for each edit.
-
-Use `uv sync --locked` to install the locked dependencies and the editable
-package. `--locked` fails if dependency metadata needs a lockfile update instead
-of silently changing it. `uv run --locked` selects the project environment, so
-manual environment activation and `sys.path` edits are unnecessary. See
-[uv's locking and syncing documentation](https://docs.astral.sh/uv/concepts/projects/sync/).
-
-Run the following from the repository root after cloning.
-
-### Windows PowerShell
-
-Check for the uv executable first:
-
-```powershell
-uv --version
-```
-
-If uv is missing, install the pinned version using the Python launcher, then
-restart PowerShell if needed to make `uv` available on PATH:
+Install the pinned uv version if it is missing, then reopen PowerShell if needed:
 
 ```powershell
 py -m pip install --user uv==0.12.23
 ```
 
-Use the executable directly. Availability of `uv` does not guarantee that
-`py -m uv` works under every account or launcher-selected Python.
-
 ```powershell
+git clone https://github.com/habibbumbus/neuro-decode.git
+cd neuro-decode
 uv python install 3.11
 uv sync --locked
-uv run --locked python --version
-uv run --locked python -I -c "import sys, neurodecode; print(sys.executable); print(neurodecode.__file__)"
+uv run --locked pytest
 ```
 
-The interpreter path should be under `.venv\Scripts\`, and the package path
-should point to `src\neurodecode\__init__.py` in this checkout. Configure your
-editor to use `.venv\Scripts\python.exe` as well.
+</details>
 
-### macOS / Linux
+<details>
+<summary><strong>macOS / Linux</strong></summary>
 
-Install uv 0.12.23 using the [official installer](https://docs.astral.sh/uv/getting-started/installation/).
-These platform instructions have not been executed in this checkout.
+Install uv 0.12.23 using the [setup guide](docs/reproduction.md#macos--linux), then:
 
 ```bash
-curl -LsSf https://astral.sh/uv/0.12.23/install.sh | sh
+git clone https://github.com/habibbumbus/neuro-decode.git
+cd neuro-decode
 uv python install 3.11
 uv sync --locked
-uv run --locked python --version
-uv run --locked python -I -c "import sys, neurodecode; print(sys.executable); print(neurodecode.__file__)"
+uv run --locked pytest
 ```
 
-Use `.venv/bin/python` as the editor interpreter on these platforms.
+These platform instructions have not been executed in this checkout.
 
-### Development checks
+</details>
 
-Run from the repository root in PowerShell or a POSIX shell:
+Tests use small synthetic fixtures and **do not require the recording**.
+The lockfile selects CPU PyTorch on Windows/Linux; macOS uses PyPI.
+For editor setup, environment verification, and cache troubleshooting, see the
+[complete setup guide](docs/reproduction.md).
 
-```text
-uv lock --check
-uv sync --locked
-uv run --locked ruff check .
-uv run --locked ruff format --check .
-uv run --locked pytest tests/test_package.py
-```
+## Reproduce the comparison
 
-The lock check verifies that dependency metadata agrees with `uv.lock`; sync
-installs the selected environment. Ruff checks the rules in `pyproject.toml`
-for Python 3.11, including common errors, unused imports, and import order.
-The format command checks formatting without rewriting files. Neither Ruff
-command proves runtime or scientific correctness. See
-[Ruff configuration](https://docs.astral.sh/ruff/configuration/) for rule settings.
+First acquire `indy_20161005_06.mat` using the
+[dataset and checksum instructions](docs/dataset.md), and place it under `data/raw/`.
+Raw recordings and generated runs stay outside Git.
 
-The existing installation smoke test imports NeuroDecode from a temporary
-directory using an isolated Python process. It checks installed package discovery
-outside the checkout, not decoding accuracy. No additional placeholder tests
-are needed. CI remains deferred until meaningful component behavior exists.
+<details>
+<summary><strong>1 · Inspect the recording and prepare causal features</strong></summary>
 
-For a restricted runtime with cache-write permission problems, after a successful
-sync use these equivalent checks without cache writes or environment syncing:
-
-```text
-uv run --locked --no-sync ruff check --no-cache .
-uv run --locked --no-sync ruff format --check --no-cache .
-uv run --locked --no-sync pytest -p no:cacheprovider tests/test_package.py
-```
-
-`--no-sync` assumes the environment has already been installed; it is not a
-replacement for the setup step. Phase 0C ran these checks successfully. See
-[progress](docs/progress.md) for commands, outcomes, and limits.
-
-### Verify setup in a temporary environment (Windows PowerShell)
-
-This optional check uses the existing project Python to install the same locked
-dependencies into a new temporary environment, preserving `.venv`. It then
-imports the editable package from a directory outside the checkout. Setting
-`UV_PROJECT_ENVIRONMENT` chooses the temporary environment; see
-[uv project environment configuration](https://docs.astral.sh/uv/concepts/projects/config/#project-environment-path).
-Run from the repository root after normal setup:
+Run from the repository root after setup and verified data acquisition:
 
 ```powershell
-$previousEnvironment = $env:UV_PROJECT_ENVIRONMENT
-$setupCheck = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
-$projectPython = (Resolve-Path .venv\Scripts\python.exe).Path
-New-Item -ItemType Directory -Path $setupCheck | Out-Null
-try {
-    $env:UV_PROJECT_ENVIRONMENT = Join-Path $setupCheck 'venv'
-    uv sync --locked --python $projectPython
-    if ($LASTEXITCODE -ne 0) { throw 'Temporary installation failed' }
-    $checkPython = Join-Path $env:UV_PROJECT_ENVIRONMENT 'Scripts\python.exe'
-    Push-Location $setupCheck
-    try {
-        & $checkPython -I -c "import sys, neurodecode; print(sys.executable); print(neurodecode.__file__)"
-        if ($LASTEXITCODE -ne 0) { throw 'Outside-checkout import failed' }
-    } finally {
-        Pop-Location
-    }
-} finally {
-    $env:UV_PROJECT_ENVIRONMENT = $previousEnvironment
-}
+uv run --locked python scripts/inspect_recording.py data/raw/indy_20161005_06.mat
+uv run --locked python scripts/plan_splits.py
+uv run --locked python scripts/bin_recording.py --features
 ```
 
-The interpreter path should be in the temporary environment; the module path
-should point to this checkout's `src/neurodecode/__init__.py`. The temporary
-directory is left available for inspection. This verifies a new environment
-on the same Windows machine, not a clean clone, another OS, or a fully offline
-installation from an empty cache.
+This establishes chronological partitions, 20 ms spike counts, aligned velocity
+labels, ten-bin histories, and the frozen training-only scaler. Training inputs
+have shape `[13070, 10, 96]`; velocity targets have shape `[13070, 2]`.
 
-For an optional repository-local uv cache, use
-`uv --cache-dir .uv-cache sync --locked` (or the corresponding uv subcommand).
-That directory is ignored. Network access is needed for missing Python
-versions, dependencies, or build requirements. `--offline` works only when the
-required artifacts are already available locally.
+[Preparation details and component audits →](docs/reproduction.md#component-and-experiment-reference)
 
-Raw/processed recordings, environments, caches, and generated runs remain
-untracked. Small provenance files and curated results can be tracked. Dataset
-source/version, attribution, license, and verified hashes are documented in the
-[dataset card](docs/dataset.md) and [manifest](data/manifest.json). Internal schema,
-units, timing, coverage differences, and unresolved alignment details are
-documented in the dataset card. Chronological partitions and timing are specified in
-[methods](docs/methods.md). Causal counts and aligned velocity labels are
-implemented alongside causal histories and training-only normalization. Validation
-baseline evaluation and ridge fitting/selection are implemented, together with
-training-only Kalman parameter diagnostics and causal validation filtering.
-GRU components pass synthetic checks, and real training/validation experiments
-are complete for the declared Phase 5B round. Final test evaluation stays closed.
-A license for this project's code has not been chosen.
+</details>
+
+<details>
+<summary><strong>2 · Evaluate baselines, fit ridge, and evaluate Kalman</strong></summary>
+
+```powershell
+uv run --locked python scripts/evaluate_baselines.py phase3a-baselines
+uv run --locked python scripts/train_ridge.py phase3b-ridge
+uv run --locked python scripts/fit_kalman.py phase4a-kalman-fit
+uv run --locked python scripts/evaluate_kalman.py phase4b-kalman-audited
+```
+
+Keep these run names for the next step: the GRU reads the selected ridge artifact
+and audited Kalman comparison from these paths. Existing run outputs are
+preserved; use the [command reference](docs/reproduction.md) when choosing
+alternate names and explicit artifact arguments.
+
+[Why Kalman underperforms here →](reports/phase4b_kalman.md)
+
+</details>
+
+<details>
+<summary><strong>3 · Train the GRU and audit its saved results</strong></summary>
+
+```powershell
+uv run --locked python scripts/train_gru.py phase5b-gru
+uv run --locked python scripts/audit_gru.py phase5b-gru
+```
+
+Requires steps 1–2, including `runs/phase2d/count_scaler.json`,
+`runs/phase3b-ridge/`, and `runs/phase4b-kalman-audited/`.
+The [declared experiment](configs/gru_experiment.toml) compares two learning rates,
+then repeats the selected setting at two additional seeds, within a four-fit
+budget. The audit recomputes prediction metrics and verifies saved provenance.
+
+[Full experiment protocol and results →](reports/phase5b_gru.md)
+
+</details>
+
+## Explore the repository
+
+| I want to… | Start here |
+| :--- | :--- |
+| Understand the experiment | [Project brief](docs/project_brief.md) |
+| Inspect the data source, license, and schema | [Dataset card](docs/dataset.md) · [Checksum manifest](data/manifest.json) |
+| Check splits, equations, and leakage controls | [Methods](docs/methods.md) |
+| Follow every setup and experiment command | [Reproduction guide](docs/reproduction.md) |
+| Read the implementation | [Python package](src/neurodecode/) · [Runnable scripts](scripts/) |
+| Change declared model settings | [TOML configurations](configs/) |
+| Inspect the evidence | [Experiment reports](reports/) · [Component tests](tests/) |
+| See what is finished and what comes next | [Progress](docs/progress.md) · [Decisions](docs/decisions.md) |
+
+## What's next
+
+- [x] Verified recording, causal features, and chronological evaluation protocol
+- [x] Baselines, ridge, Kalman, and a declared three-seed GRU comparison
+- [ ] Offline versus sequential replay agreement and measured processing latency
+- [ ] Visual cursor replay and controlled robustness experiments
+- [ ] Frozen final test evaluation
+
+<details>
+<summary><strong>Scope, dataset attribution, and licensing</strong></summary>
+
+This is an independent educational project using one recorded nonhuman-primate
+session. It does not establish live closed-loop control, human performance, or
+clinical usability. Cross-session generalization and inference latency remain
+unmeasured. A future cursor replay will be labeled as offline recorded-data replay.
+
+**Dataset:** O'Doherty, J. E., Cardoso, M. M. B., Makin, J. G., & Sabes, P. N. (2017).
+*Nonhuman Primate Reaching with Multichannel Sensorimotor Cortex Electrophysiology*
+(v1). [Zenodo · DOI 10.5281/zenodo.583331](https://doi.org/10.5281/zenodo.583331).
+Source data is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+See the [dataset card](docs/dataset.md) for acquisition and attribution details.
+
+**Code:** a license has not yet been chosen for this repository.
+
+</details>
+
+<p align="center">
+  <a href="#top">Back to top ↑</a>
+</p>
