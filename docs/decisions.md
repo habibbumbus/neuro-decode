@@ -182,3 +182,27 @@ explain some observed limitations without proving a single cause. Validation
 still improves overall near the epoch cap, so do not claim convergence or a
 proven sustained overfitting onset. Keep final test closed. Next increment
 verifies offline/sequential replay and measures processing latency before video.
+
+## 2026-11-17 — Sequential replay before disruption tests or video
+
+Retain the exact saved models, training transforms, ten-bin histories and
+Phase 2D quality/identity metadata. Reveal raw completed count bins one at a
+time; reuse existing singleton feature adapters and model APIs. GRU starts at
+zero per bounded window. Kalman updates only common eligible rows, carrying
+its own estimated state within a continuous run and resetting to the training
+prior after invalid time/boundaries, with no extra warm-up observations.
+
+Declare combined absolute/relative equivalence tolerances before results and
+gate timing on all-model agreement. Use CPU batch size one, 200 warm-ups and
+one 2775-emission timed pass, retaining every outlier. Report checked model API
+and completed-count-bin preparation-plus-model as separate boundaries; exclude
+loading, event binning, disk, acquisition, plotting and playback sleep. The
+first run overlapped tests, so preserve it and use a separate clean timing run
+after tests, rather than selecting the fastest observations. Report first calls
+without describing them as fresh-process cold starts.
+
+Equivalence passed. Offline GRU batch-one predictions are exactly equal to
+replay; small differences from saved batch-256 outputs reflect float32 arithmetic.
+Warmed p95 is below 20 ms, but all models have maxima above it. Preserve this
+limitation and make no hard real-time claim. Next increment tests predefined
+input disruptions before producing cursor video from verified predictions.

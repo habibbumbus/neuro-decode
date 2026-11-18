@@ -2321,3 +2321,170 @@ CI, trajectory integration or cursor video. Phase 5B implemented/verified locall
 changes remain uncommitted. User runs Git; base/pushed checkpoint remains f405c15.
 Stop here. Next increment: **offline versus sequential replay equivalence with
 the same bounded-window resets, and measured processing latency before video**.
+
+## Phase 6A — sequential replay equivalence and processing time (2026-11-17)
+
+### Repository gate and preserved work
+
+Read CODEX.md, progress, relevant methods/decisions, Phase 5B report, model and
+preparation interfaces/tests, and saved model/run evidence. No applicable
+AGENTS.md was found in the repository or checked ancestors. Initial branch main,
+HEAD 83a11da63f9be7660cdcd4b2a3c8d8c34199b63c (train and validate gru mvmnt),
+matching local origin/main and a fresh GitHub ls-remote. Phase 5B is committed
+and pushed; its historical uncommitted progress note is superseded. The initial
+tracked tree/index were clean; unrelated untracked %SystemDrive%/ was preserved.
+CODEX.md, recordings, processed data, checkpoints and runs remain excluded and
+untracked, verified with ls-files/check-ignore. No assistant Git mutation.
+
+During work main advanced to a90988b2d3c6982c070d3077759ce6fb0cc4a3da
+(redesign readme), matching local origin/main. Its README redesign, new
+docs/assets/neurodecode-banner.svg and docs/reproduction.md were preserved;
+Phase 6A does not modify them. The clean run records the newer commit and
+actual dirty/untracked implementation state. No branch switch, staging, commit,
+push, merge, extra GRU training or final-test opening was performed.
+
+Phase 5B learning follow-up: user recognized that reporting only the best seed
+does not show the whole picture. Explained the specific issue: hiding four
+worse results makes a lucky result appear typical. This demonstrates the
+high-level reporting distinction; broader optimization/gate reasoning remains
+pending. Prior validation-selection and extra-epochs qualifications stand.
+
+### Teaching and protocol before coding/results
+
+Explained offline prepared windows versus revealing completed bins in timestamp
+order, frozen training scaling, ten-bin oldest-to-newest histories, independent
+GRU zero state, Kalman's estimated-state carry and training-prior boundary reset.
+Distinguished 20 ms acquisition, 200 ms initial history, after-bin processing
+time and optional playback speed. Recorded replay is not live neural control.
+
+Declared configs/replay.toml before measurement: validation only, representative
+GRU seed 2026, batch size one, one torch/native thread; 200 untimed warm-up
+predictions per model followed by one fresh-state timing pass through all 2775
+eligible bins, fixed ridge/GRU/Kalman order, linear percentiles, no trimming.
+Equivalence precedes benchmarking: ridge/Kalman atol 1e-10 mm/s, rtol 1e-12;
+GRU atol 1e-4 mm/s, rtol 1e-6; combined absolute-plus-relative criterion.
+No tolerances were changed after observing results.
+
+### Implemented and measured evidence
+
+- src/neurodecode/streaming.py: label-free ReplayBin packets from established
+  quality/identity checks, bounded owned-count history, exact grid/channel/unit
+  validation, existing feature/model adapters and per-emission nested timers.
+  No new scientific binning/normalization path or movement-valued inputs.
+- scripts/replay_validation.py: trusted artifact/source/split verification,
+  saved/offline/replay comparisons before timing, fresh-state warmed pass,
+  timestamped predictions, all-bin status and raw timing/provenance exports.
+- scripts/audit_replay.py: saved hash/raw-statistics audit and real-data
+  offline batch-one GRU comparison, without fitting or a new benchmark pass.
+- tests/test_streaming.py: 34 synthetic cases covering order/scaling, count
+  ownership, warm-up, zero/invalid bins, metadata rejection, future causality,
+  label-value mutation, session/partition/segment/missing-bin resets and
+  offline agreement for all models; no real recording enters tests.
+- configs/replay.toml, reports/phase6a_replay.md, methods/decisions/progress:
+  declaration, state/history rules, both timing boundaries and measured limits.
+
+2784 original validation count bins reveal nine warm-up bins then emit exactly
+the established 2775 rows, 1550.200–1605.680 s, with one initial reset per model.
+All source IDs, histories, timestamps, partition and segment identities match.
+No warm-up bin is an extra Kalman update; no hidden/filter state crosses invalid
+time. Real validation has no later gap, so noninitial resets are synthetic-tested.
+
+| Model | Max absolute replay–saved difference (mm/s) |
+| --- | ---: |
+| Ridge | 3.126388037344441e-13 |
+| GRU seed 2026 | 0.0001220703125 |
+| Kalman | 0 |
+
+All pass abs(diff) <= atol + rtol*abs(saved). GRU's worst absolute row is bin
+13930 x: saved 125.784500122, replay 125.784622192 mm/s, allowed 0.0002257845.
+Fresh offline APIs reproduce saved values exactly. Offline GRU with batch_size=1
+matches every replay prediction exactly, isolating float32 batch arithmetic.
+Timed and untimed replay outputs match exactly. No mismatch required changing
+scientific semantics or relaxing tolerance.
+
+Initial run runs/phase6a-validation-replay overlapped a full test run started
+by the assistant. Preserved its evidence, disclosed the competing workload,
+and used one separate clean run after tests: runs/phase6a-validation-timing.
+No fastest-run or outlier selection. Other OS activity/thermals were uncontrolled.
+
+Clean hardware: 13th Gen Intel Core i9-13900H, 20 logical CPUs, Windows build
+26300, Python 3.11.17, torch 2.14.1+cpu, NumPy 2.4.6, SciPy 1.17.1,
+scikit-learn 1.7.2, h5py 3.16.0, threadpoolctl 3.7.0. One torch/native thread;
+native pools and versions are saved. No dependency installation or change.
+Monotonic perf_counter_ns uses QueryPerformanceCounter, reported resolution
+100 ns. All rows below summarize 2775 emissions after 200 untimed warm-ups.
+
+| Model | Boundary | p50 ms | p95 ms | p99 ms | Maximum ms |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Ridge | Checked model API | 0.8161 | 1.7750 | 3.0928 | 28.2351 |
+| Ridge | Preparation + model | 2.3785 | 4.2600 | 7.0481 | 79.9212 |
+| GRU | Checked model API | 2.2428 | 3.6974 | 6.5368 | 64.6608 |
+| GRU | Preparation + model | 3.8030 | 6.2640 | 10.0801 | 161.6228 |
+| Kalman | Checked model API | 1.7981 | 3.1333 | 5.8446 | 21.7631 |
+| Kalman | Preparation + model | 3.4502 | 5.7962 | 10.6909 | 27.2538 |
+
+Checked model API includes validations and tensor/output conversions plus
+Kalman numerical diagnostics, not just isolated kernels. Preparation includes
+raw packet checks, history, singleton construction and existing frozen adapters.
+Both exclude model loading/imports, event binning, disk I/O, target/quality
+preparation, packet creation, acquisition, plotting, playback sleep, external
+logging and returned-record packaging. Warm-up non-emissions are processed but
+not latency samples. First eligible calls are separately reported (not fresh
+process startup); raw samples include timer/scheduling overhead and every outlier.
+P95 below 20 ms does not overcome maxima above 20 ms or establish hard real time.
+
+First emitted bin 13110 at 1550.200 s has only neural bins 13101–13110 available.
+Ridge predicts [31.390114,12.002288], GRU [-3.388831,15.284597], Kalman
+[-0.807717,-6.165349] mm/s. Actual [14.162167,3.788288] is reporting/scoring only.
+Next bin shifts ridge/GRU history to 13102–13111; GRU again starts at zero.
+Kalman carries its own prior estimate/covariance, predicts and updates using
+the new counts, yielding [-28.666149,-40.008431]. No actual velocity enters.
+
+### Actual verification and reproduction
+
+~~~powershell
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider tests/test_streaming.py --tb=short -x
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider --tb=short
+.venv/Scripts/python.exe -u scripts/replay_validation.py phase6a-validation-replay
+.venv/Scripts/python.exe -u scripts/replay_validation.py phase6a-validation-timing
+.venv/Scripts/python.exe scripts/audit_replay.py phase6a-validation-timing
+.venv/Scripts/ruff.exe check --no-cache .
+.venv/Scripts/ruff.exe format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache sync --locked --offline --check
+~~~
+
+All 34 focused replay tests passed; complete suite 303 passed (269 retained).
+Early gap tests exposed inconsistent synthetic segment declarations and the
+old helper's 0.2+0.1 versus exact-grid 0.3 one-ULP mismatch. Corrected only the
+synthetic fixture, leaving strict production boundaries unchanged. Lint/format,
+offline lock consistency and synchronized-environment checks passed.
+Artifact audit verifies every recorded checksum, exactly reproduces all timing
+summaries from nanoseconds, and confirms exact real batch-one GRU equality.
+New logs/predictions/protocols/verification remain under ignored runs/.
+
+Scoring/test scope: only validation prepared for equivalence/timing. Existing
+global source loading still reads recording bytes; no test windows, targets,
+predictions, plots, scores or timings were constructed. No robustness sweep,
+new GRU selection, trajectory integration or cursor video. Fresh-clone and
+cross-platform execution, full raw-event throughput and process cold start
+remain untested. Timing is one uncontrolled-machine observation, not a guarantee.
+
+### Learning handoff and next increment
+
+Explained the measured differences, batch arithmetic, state/history availability
+at two real bins, acquisition versus processing versus playback, and p95 versus
+worst-case limits. Independent teach-back remains pending: why carrying GRU
+state changes the model, why Kalman resets to training statistics, and why
+sub-20-ms p95 does not promise every deadline. No new mastery claimed.
+Teach-back follow-up: correctly identified Kalman's carried quantity as its
+estimated state. Clarified that it also carries covariance, never actual velocity.
+GRU reset reasoning was not yet understood: training starts each ten-bin window
+from zero, so carrying hidden state would introduce earlier information and,
+when feeding overlapping full windows, process overlapping bins again. Clarified
+that p95 describes a percentile, not a maximum or a deadline guarantee; the
+measured GRU preparation-plus-model maximum was 161.623 ms despite p95 6.264 ms.
+Independent GRU-reset and percentile explanations remain pending.
+Phase 6A is implemented and verified locally, uncommitted; user runs Git.
+Stop here. Next increment: **predefined input-disruption experiments, followed
+by visual cursor replay built from verified predictions**.

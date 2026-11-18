@@ -1314,3 +1314,86 @@ better. Report retains the underperformance, generalization gap and narrow
 prediction spread, without a new tuning round. Validation is development data;
 test stays closed. Next increment: offline/sequential replay equivalence and
 processing latency before the cursor video.
+
+## Phase 6A: completed-bin sequential replay and processing time
+
+Replay uses the unchanged validation binning/quality preparation and saved
+ridge, representative seed-2026 GRU and Kalman artifacts. Source/checkpoint,
+channel/unit, timing, split and frozen-transform identities are verified first.
+No refitting, new normalization, target scaling, test examples or tuning.
+
+iter_replay_bins adapts existing AlignedTargets using the same internal
+preparation identity/source-validity checks. It strips all movement values and
+reveals one completed raw count vector plus fixed quality metadata at a time.
+The up-front adapter checks include label finiteness, but prediction receives
+only counts, identities and quality flags. This uses recorded quality metadata;
+it is not a new online behavior-quality detector or raw-event acquisition path.
+All source bins are prepared in memory outside the timed boundary.
+
+HistoryBuffer retains at most ten valid consecutive packets, oldest-to-newest.
+It owns count copies, validates exact grid edges and full channel/unit/source
+identity, and rejects repeated/out-of-order bins rather than sorting them.
+Missing grid bins, segment/session/partition changes and invalid source bins
+clear history. Warm-up targets still supply valid source counts. Other target
+quality failures invalidate their count row as in Phase 2D. Emission requires
+complete valid support and an eligible current target. Genuine all-zero counts
+remain observations. No predictions are emitted during warm-up/invalid support.
+
+Each emission builds a singleton HistoryWindows with deliberately NaN scoring
+placeholders, then reuses ridge_inputs, gru_inputs or current_bin_observations.
+These adapters ignore labels and apply the existing frozen scaler. Ridge
+uses float64 [1,960], with channels fastest. GRU uses float32 [1,10,96], starts
+h0 [1,1,32] at zero every time, and reads the final hidden state through its head.
+Retaining recurrent state between windows would violate the training contract.
+
+Kalman uses the final bin's standardized counts and its own estimated mean/
+covariance. Reuse the existing kalman_step solve/Joseph equations. At the first
+common eligible row, update the training prior with predict=False; do not use
+the nine unscored warm-up bins as extra updates. Consecutive eligible rows
+predict then update. Any non-emission breaks active filter state; after full
+valid support returns, use the training prior again. No state or count history
+crosses boundaries, and no actual movement initializes or corrects an estimate.
+
+configs/replay.toml declares validation only, one thread, batch size one,
+200 untimed warm-up predictions, then one fresh-state pass of 2775 timed eligible
+emissions in fixed ridge/GRU/Kalman order. First compare all source IDs, target
+timestamps and masks with saved Phase 5B predictions and freshly evaluated
+offline APIs. Ridge/Kalman atol=1e-10 mm/s and rtol=1e-12; GRU atol=1e-4 mm/s
+and rtol=1e-6. Require abs(diff) <= atol + rtol*abs(reference), preserving the
+declared tolerances. A failed comparison prevents warmed benchmarking.
+
+Observed replay–saved maximum differences: ridge 3.126388e-13 mm/s,
+GRU 1.220703125e-4 mm/s, Kalman zero, all passing combined tolerances on the
+same 2775 rows. Offline APIs reproduce saved batch predictions exactly. The
+independent audit confirms exact equality between offline batch-one GRU and
+replay, identifying the small float32 difference as batch arithmetic. Timed
+and untimed sequential outputs also match exactly.
+
+time.perf_counter_ns provides monotonic wall-clock samples. Two nested timings
+are saved for each emitted bin. Model API time begins with already normalized
+indexed inputs and includes checked predict/kalman_step calls, parameter/input
+validation, tensor copies/conversion, numerical diagnostics and output conversion.
+It is not an isolated numerical kernel benchmark. Preparation-plus-model time
+begins with ReplayBin already in memory and includes history/identity checks,
+singleton construction, the existing frozen normalization/adapters, model API
+and state update. Returned-record packaging and packet construction are outside.
+
+Both exclude model loading/imports, recording reads, spike-event binning,
+target/quality preparation, acquisition, plotting, playback sleep and artifact
+logging. Warm-up/non-emission bins are processed but not included in latency
+percentiles. Record first eligible calls separately; they are not fresh-process
+cold starts and exclude loading. Warm runtime, then reset scientific history/
+filter state before the timed pass. Save raw nanoseconds, linear p50/p95/p99,
+maximum, mean, reciprocal-mean service rate, hardware/versions/thread pools,
+identities, protocol, checkpoint hashes and Git/implementation provenance.
+
+The initial run overlapped the full test suite and is preserved as diagnostic
+evidence; headline timing uses a separate identical-protocol run after tests.
+No outliers were removed. On an i9-13900H CPU, clean-run preparation-plus-model
+p95 was ridge 4.2600 ms, GRU 6.2640 ms, Kalman 5.7962 ms, but maxima were
+79.9212, 161.6228 and 27.2538 ms. See the complete
+[Phase 6A report](../reports/phase6a_replay.md) for both boundaries and limitations.
+Twenty milliseconds is still acquisition duration; initial ten-bin history is
+200 ms, and playback speed is separate. These processing percentiles do not
+establish hard real-time deadlines, a live BCI or full acquisition-to-output time.
+No disruption testing, trajectory integration or cursor video is part of 6A.

@@ -1,0 +1,16 @@
+# Phase 6A protocol, declared before equivalence or latency results.
+partition = "validation"
+warmup_predictions = 200
+timed_predictions = 2775
+passes = 1
+batch_size = 1
+threads = 1
+percentile_method = "linear"
+ridge_atol_mm_s = 1e-10
+ridge_rtol = 1e-12
+kalman_atol_mm_s = 1e-10
+kalman_rtol = 1e-12
+gru_atol_mm_s = 1e-4
+gru_rtol = 1e-6
+gru_seed = 2026
+model_order = ["ridge", "gru", "kalman"]
