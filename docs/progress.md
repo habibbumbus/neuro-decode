@@ -2656,3 +2656,144 @@ clinical or final-test claim. No fresh-clone/cross-platform reproduction,
 new latency measurement, retraining, additional sweep or cursor integration/video.
 Phase 6B implemented/verified locally; changes remain uncommitted. User runs Git.
 Stop here. Next increment: **visual cursor replay from verified predictions**.
+
+## Phase 6C — validation-only visual cursor replay (2026-11-19)
+
+### Repository state, preserved work and learning follow-up
+
+Read CODEX.md, relevant progress/methods/decisions, Phase 6A/6B reports, saved
+clean sequential predictions and tracker/target preparation. No applicable
+AGENTS.md was found in the repository or checked ancestors. Actual main at
+1bb05680123b9c95abb0772d3ddb3f9bb1737ed1 (evaluate decoder under input disruptions,
+see how robust it is), matching local origin/main and fresh GitHub ls-remote.
+Phase 6B is committed/pushed; its previous uncommitted note is historical.
+Tracked tree/index clean on entry; unrelated untracked %SystemDrive%/ and the
+existing README/reproduction work were preserved. No assistant stage, commit,
+push, merge or branch switch. CODEX.md, recordings, checkpoints and runs remain
+excluded/untracked; generated video/images/logs are not intended for Git.
+
+Phase 6B teach-back: user distinguished observed zero counts from unavailable
+data, but described missing packets as unexpected. Clarified that the input bin
+is expected and its packet was not received, leaving counts unknown. Recognized
+accuracy versus coverage as distinct and rejected general benefit from one noise
+improvement; explanation was supplied about accuracy only on emitted predictions.
+No broader missing-data or biological-model mastery is claimed.
+
+### Explanation and alignment audit before rendering
+
+Explained displacement = velocity × elapsed seconds (100 mm/s for 20 ms gives
+2 mm), cumulative integration and a single common anchor. Explained completed
+neural-bin availability, bounded ten-bin ridge/GRU inputs, zero GRU state and
+Kalman estimated-state carry. Reference movement is display/scoring information,
+never an input or correction. Attractive animation, selected endpoint distance
+and playback speed do not establish velocity accuracy, live control or latency.
+
+Read original tracker samples through verified existing loading/preparation and
+audited the fixed 500 validation rows in [1550.200,1560.200). Saved targets match
+tracker position differences divided by actual behavioral elapsed time exactly.
+However 40/500 behavioral intervals last 16/24 ms while neural bins last about
+20 ms; maximum source age/duration discrepancy 4 ms. Source endpoints chain
+with zero breaks, but integrating labels over neural durations differs from
+sampled tracker endpoints by up to 0.822694453 mm per coordinate. Announced this
+before coding the presentation. Exact original-position alignment is not asserted.
+Use the explicit tracker-derived reference velocity integration label instead.
+
+Fixed inputs: clean Phase 6A CSV, source/model/prediction hashes verified; ridge,
+representative GRU seed 2026 and Kalman. No inference or fitting in renderer.
+configs/demo.toml fixes 500 frames at 50 fps  / 1600×900, CRF20/libx264 medium,
+yuv420p; predetermined still frame 250, inspection frames 0/250/499. All paths
+share relative(0,0) mm at 1550.180 s, first bin start. Display the 500 selected
+bin ends 1550.200–1560.180 s; each position includes that completed bin's
+velocity times its actual duration. Store 501 positions with the pre-clip anchor,
+not an extra video frame. Elapsed frame times 0–9.98 s encode exactly 10 s;
+actual integration durations sum to 10 s from the anchor to the final endpoint.
+
+### Implemented and actual outputs
+
+- src/neurodecode/demo.py: pure endpoint integration and tracker alignment audit;
+  finite shape/identity checks, exact shared-edge continuity and gap rejection.
+  Integrator accepts no later reference positions, so it cannot snap to them.
+- scripts/render_cursor_replay.py: verifies trusted saved inputs/source context,
+  performs original timing audit, integrates unchanged velocities, writes fixed
+  common-axis animation/still, provenance, position/alignment CSV and FFprobe
+  verification; extracts actual encoded first/middle/last frames.
+- scripts/audit_cursor_replay.py: artifact-only verification of every saved
+  displacement against source velocity × duration, shared anchors, hashes,
+  recorded axes/video properties and exact middle-frame still bytes.
+- configs/demo.toml and tests/test_demo.py: reproducible settings and13 focused
+  synthetic tests. docs/demo.md, Phase 6C report, methods/decisions/progress.
+  No README rewrite, model change, source replacement or dependency install.
+
+Final run runs/phase6c-validation-cursor-final:
+
+- cursor_replay.mp4: 488,786 bytes; H.264/yuv420p,1600×900,50 fps,500 frames,
+  exactly 10.000000 seconds confirmed by FFprobe.
+- still.png: 143,176 bytes; fixed frame 250 at 1555.200 s  / elapsed 5 s.
+- Original render frames and decoded encoded_frame_01/02/03.png for inspection;
+  positions.csv (anchor plus 500 endpoints), alignment.csv, inputs.json,
+  run.json and verification.json, all ignored under runs/.
+
+Initial runs/phase6c-validation-cursor is preserved. Visual review led only to
+shorter sidebar wording and GRU capitalization in the final export. Position
+CSV bytes are identical between exports; no trajectory, interval, axis or model
+adjustment. All actual decoded final frames 0/250/499 were visually inspected:
+clear offline/validation labels, correctly qualified reference, legend, time,
+fixed common physical axes/equal aspect and visible Kalman drift. No clipped
+path, shifting limits, independent model rescaling or automatic recentering.
+
+Axis bounds remain x[-297.620224,304.783605], y[-547.221219,55.182610] mm.
+All paths have the same bounds; the full drift is deliberately retained. The
+current distance and full-validation velocity scores are separately labeled.
+Terminal distance to integrated reference: ridge 43.839497, GRU 42.419501,
+Kalman 441.346509 mm. These illustrative distances do not mean GRU beats ridge;
+one endpoint can hide canceling velocity errors. Displayed original 2775-row
+velocity RMSE remains ridge 52.571380, GRU 54.791919, Kalman 102.838507 mm/s.
+
+### Actual checks and reproduction
+
+~~~powershell
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider tests/test_demo.py --tb=short -x
+.venv/Scripts/python.exe -u scripts/render_cursor_replay.py phase6c-validation-cursor
+.venv/Scripts/python.exe -u scripts/render_cursor_replay.py phase6c-validation-cursor-final
+.venv/Scripts/python.exe scripts/audit_cursor_replay.py phase6c-validation-cursor-final
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider --tb=short
+.venv/Scripts/ruff.exe check --no-cache .
+.venv/Scripts/ruff.exe format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache sync --locked --offline --check
+~~~
+
+13 focused tests and full 332-test suite passed (319 retained). Tests cover
+variable durations, correct endpoint association, anchoring/ownership, future
+independence, invalid/missing bins, gap/order/segment rejection and original
+tracker timing mismatch/future-sample rejection. Lint/format, offline lock and
+environment checks passed. No blocked check or new dependency. Existing FFmpeg
+and ffprobe on PATH were sufficient: build N-122609-g364d5dda91-20260131.
+Python 3.11.17, NumPy 2.4.6, Matplotlib 3.11.2; Pillow/encoder versions are saved.
+
+Independent actual-output audit verifies recorded hashes and every displacement,
+maximum residual 2.842171e-14 mm, exact common anchor, identical inspection axes,
+correct 500 endpoint identities and still identical to middle-render bytes.
+FFprobe verifies dimensions/rate/frame count/duration; visual QA used frames
+decoded from the MP4, not only pre-encoding renders. Code/Git/source/split/target/
+transform/channel/prediction/model identities, export settings and durations
+are saved. All source predictions and models were consumed unchanged.
+
+### Limits, learning handoff and stop
+
+The reference is an integration of tracker-derived velocities, not the original
+sampled tracker path. Coordinates are relative to the shared pre-clip anchor;
+first display is after one completed-bin step. No smoothing, shifting, snapping,
+periodic resets or later reference corrections. Missing/discontinuous input
+fails rather than bridging or selecting a better clip. This is precomputed
+clean-validation playback, not new processing-time evidence or live BCI control.
+No test windows, targets, predictions, plots or scores were made; existing
+source/global metadata loading still reads the acquired file. No retraining,
+new disruptions, fresh-clone/cross-platform export or clinical/final-test claim.
+
+Explained velocity-to-displacement, reference qualification, common anchoring,
+drift and why local trajectory appearance cannot replace validation velocity
+metrics. Independent integration/position-correction teach-back remains pending.
+Phase 6C is implemented/verified locally, uncommitted; user runs Git. Stop here.
+Next increment: **review and freeze the release evaluation/demo protocol**;
+no final-test opening is authorized by this phase.

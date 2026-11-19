@@ -1,0 +1,21 @@
+# Phase 6C: presentation only; fixed validation inputs, no model tuning.
+partition = "validation"
+interval_start_s = 1550.200
+interval_end_s_exclusive = 1560.200
+expected_samples = 500
+prediction_run = "runs/phase6a-validation-timing"
+models = ["ridge", "gru", "kalman"]
+gru_seed = 2026
+initial_position_mm = [0.0, 0.0]
+integration = "anchor + cumulative velocity times actual neural bin duration; completed-bin endpoint timestamps"
+gap_policy = "reject missing, unordered or discontinuous clip; never bridge, reset or choose another interval"
+fps = 50
+width_px = 1600
+height_px = 900
+dpi = 100
+codec = "libx264"
+crf = 20
+preset = "medium"
+pixel_format = "yuv420p"
+still_frame_index = 250
+inspection_frame_indices = [0, 250, 499]

@@ -224,3 +224,21 @@ no-emission intervals are not evidence of decoding accuracy. No tuning after
 scores or extra candidates. All declared conditions completed; slight gains
 under two disruptions are retained without claiming noise/removal is beneficial.
 Stop after Phase 6B; next is visual cursor replay from verified predictions.
+
+## 2026-11-19 — Audited reference integration for fixed validation video
+
+Use the existing first500 validation prediction ends in [1550.200,1560.200),
+without selecting a favorable segment or rerunning models. Audit original tracker
+position differences, target labels and actual durations before plotting.
+Forty behavioral intervals differ from neural-bin durations; exact original
+tracker-position alignment is not verified. Display saved target velocity
+integration with that explicit label, not purported original positions.
+
+Anchor all paths once at relative(0,0) at 1550.180 s and integrate every selected
+velocity over its actual neural-bin duration. Show500 endpoint frames at 50 fps,
+using the same fixed physical scale for reference/ridge/GRU/Kalman and retaining
+drift. Do not correct, smooth, shift or reset decoded positions. Reject gaps.
+Show full-validation velocity scores separately from local integrated distance.
+Export video/still and provenance under ignored runs/, inspect actual decoded
+first/middle/last frames, and commit only source/config/tests/docs. No test-set
+opening, model tuning, live-control implication or new processing-time claim.

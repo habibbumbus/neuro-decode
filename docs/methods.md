@@ -1478,3 +1478,62 @@ One session/subset realization and six seconds of disruptions cannot establish
 real electrode instability, cross-session robustness or reliable missing-input
 control. Test examples remain closed; common source/global metadata loading is
 unchanged. No new latency measurement, retraining or cursor video in 6B.
+
+## Phase 6C: fixed validation cursor integration and animation
+
+Render the clean sequential Phase 6A prediction CSV, verified against its audit,
+artifact/model hashes and unchanged validation preparation. Fixed interval
+[1550.200,1560.200) s selects exactly 500 endpoint rows, IDs 13110–13609, ending
+1550.200 through 1560.180 s. No model inference, tuning, disruption or test scoring
+is part of rendering. Source positions are accessed only to audit alignment.
+
+Original target velocities exactly equal sampled tracker displacement divided
+by actual selected behavioral elapsed time. In this interval40/500 selected
+behavioral durations are 16/24 ms rather than neural-bin durations near 20 ms.
+Maximum source age is 4 ms, there are no source endpoint chain breaks, and
+integrating targets using neural-bin durations differs from sampled tracker
+endpoints by up to 0.822694453 mm per coordinate. Exact original-position alignment
+is therefore not asserted. The displayed reference is explicitly named
+tracker-derived reference velocity integration, computed from saved target
+velocities with the same neural-bin durations used for every decoder.
+
+For each path use p_i = p_(i−1) + v_i*(bin_end_i−bin_start_i), float64,
+starting at shared relative(0,0) mm at 1550.180 s, the first selected bin's start.
+This anchor is 0.02 s before the clip's first displayed endpoint and is not an
+extra video frame. Store501 positions (anchor plus 500 endpoints). Frame i uses
+position i+1 at its actual bin-end timestamp, preventing a one-bin shift. First
+elapsed time is 0, last 9.98 s; 500 frames at 50 fps encode10 s. Actual selected
+durations sum to 10 s from the anchor to final endpoint. No future tracker value
+corrects or initializes a decoded path after the common anchor; no smoothing,
+shift, snap, periodic reset or interpolation. Reject missing/nonfinite velocities,
+unordered IDs, nonshared edges, nonpositive durations and segment changes;
+do not bridge a gap or find another interval. Clean clip support is complete.
+
+Use one fixed equal-aspect physical-unit axis covering all four complete
+validation paths: reference, ridge, representative seed-2026 GRU and Kalman.
+Bounds are presentation-only and remain constant throughout. Kalman drift is
+not clipped or independently rescaled. Show elapsed/bin-end time, clear legend,
+common anchor, reference caveat, validation-only/offline intracortical labels,
+and full2775-row velocity RMSE so a favorable local position does not imply
+GRU beat ridge. Playback50 fps is independent of measured processing latency.
+
+configs/demo.toml fixes interval, anchor, models, export dimensions 1600×900,
+50 fps,500 frames, H.264/libx264, CRF 20, medium preset, yuv420p, and representative
+still at frame 250. scripts/render_cursor_replay.py saves selected inputs/source/
+split/transform/prediction/model hashes, durations, alignment audit, position CSV,
+code/Git state, library/encoder versions and video settings under ignored runs/.
+Reject existing outputs. FFprobe verifies encoded frame count, dimensions, rate
+and duration; actual encoded frames 0/250/499 are extracted for visual inspection.
+scripts/audit_cursor_replay.py independently differences saved positions against
+source velocity × actual duration, checks anchors/hashes/axes/still and recorded
+video properties without running any model. All media stays out of Git.
+
+Final decoded first/middle/last frames were inspected for timing, labels, common
+axes and drift. All 332 tests passed, including 13 new synthetic alignment,
+integration, anchoring and gap tests. Maximum actual displacement residual is
+2.842171e-14 mm. Terminal integrated distances (ridge 43.8395, GRU 42.4195,
+Kalman 441.3465 mm) illustrate accumulated drift; they do not replace validation
+velocity RMSE or establish GRU superiority. Reference integration is not the
+original sampled cursor trajectory. No new latency benchmark, fresh-platform
+reproduction, live control or clinical claim. See [demo commands](demo.md) and
+the [Phase 6C report](../reports/phase6c_cursor.md).
