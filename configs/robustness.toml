@@ -1,0 +1,37 @@
+# Phase 6B round 1, declared before disrupted inference. No adaptive additions.
+round = "phase6b-round1"
+partition = "validation"
+source_sha256 = "4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac"
+expected_channels = 96
+expected_base_rows = 2775
+expected_primary_rows = 2761
+max_conditions = 10
+model_seeds = [2026] # frozen representative GRU only; no fitting
+channel_seed = 20261118
+thinning_seed = 20261119
+poisson_seed = 20261120
+channel_ranking = "sha256(phase6b-channel-loss-v1|seed|source_sha256|channel_id), ascending hex"
+channel_counts = [10, 24, 48] # 10.4167%, 25%, 50%; ceil(0.10*96)=10
+channel_rank_prefix = [
+  "M1 012", "M1 022", "M1 002", "M1 059", "M1 015", "M1 018",
+  "M1 053", "M1 071", "M1 009", "M1 046", "M1 048", "M1 025",
+  "M1 091", "M1 077", "M1 066", "M1 014", "M1 050", "M1 081",
+  "M1 016", "M1 067", "M1 036", "M1 094", "M1 013", "M1 055",
+  "M1 093", "M1 034", "M1 026", "M1 039", "M1 006", "M1 056",
+  "M1 003", "M1 007", "M1 020", "M1 019", "M1 064", "M1 085",
+  "M1 070", "M1 047", "M1 011", "M1 004", "M1 008", "M1 061",
+  "M1 043", "M1 038", "M1 001", "M1 058", "M1 035", "M1 063"
+]
+affected_first_bin_id = 13210 # 1552.200 s, inclusive
+affected_stop_bin_id = 13510 # 1558.200 s, exclusive
+thinning_keep_probabilities = [0.8, 0.5]
+poisson_training_mean_multipliers = [0.25, 1.0]
+missing_first_bin_id = 13310 # 1554.200 s
+missing_lengths_bins = [1, 5]
+missing_policy = "all models skip unavailable bin, clear history, wait for ten valid bins; Kalman resets to training prior on resumption"
+channel_loss_representation = "zero raw counts, still a valid observation; no channel reordering"
+primary_scoring = "all original eligible rows except union of scheduled missing and nine following recovery rows"
+secondary_scoring = "each condition's available rows, paired with clean on exactly those rows; always report coverage"
+metrics = ["per-axis RMSE mm/s", "overall RMSE mm/s", "per-axis R2", "mean R2"]
+trace_interval_s = [1550.2, 1560.2]
+trace_conditions = ["channel-loss-48", "missing-5"]

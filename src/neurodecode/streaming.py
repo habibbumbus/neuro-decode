@@ -29,7 +29,7 @@ from neurodecode.splits import TimingConfig
 class ReplayBin:
     """One completed raw count bin and fixed quality metadata; no movement labels."""
 
-    counts: NDArray[np.int64]
+    counts: NDArray[np.int64] | None
     source_row: int
     bin_id: int
     start_s: float
@@ -42,6 +42,7 @@ class ReplayBin:
     identity: tuple[tuple[str, str], ...]
     source_valid: bool
     target_valid: bool
+    missing: bool = False
 
 
 def iter_replay_bins(
@@ -99,8 +100,14 @@ class HistoryBuffer:
             or packet.identity != s.identity
         ):
             raise ValueError("Replay channel/unit/source/split identity mismatch")
-        if (
-            packet.counts.shape != (len(s.channel_ids),)
+        if type(packet.missing) is not bool:
+            raise ValueError("Missingness must be an explicit boolean")
+        if packet.missing:
+            if packet.counts is not None or packet.source_valid:
+                raise ValueError("Missing packets require no counts and invalid source")
+        elif (
+            not isinstance(packet.counts, np.ndarray)
+            or packet.counts.shape != (len(s.channel_ids),)
             or packet.counts.dtype.kind not in "iu"
             or np.any(packet.counts < 0)
         ):

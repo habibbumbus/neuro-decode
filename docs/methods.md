@@ -1397,3 +1397,84 @@ Twenty milliseconds is still acquisition duration; initial ten-bin history is
 200 ms, and playback speed is separate. These processing percentiles do not
 establish hard real-time deadlines, a live BCI or full acquisition-to-output time.
 No disruption testing, trajectory integration or cursor video is part of 6A.
+
+## Phase 6B: controlled raw-count input disruptions
+
+Round 1 was declared in configs/robustness.toml and the report before disrupted
+inference. Freeze Phase 6A's models, source/channel/unit identities, transforms,
+validation timeline and replay path. No training or adaptation. All models
+receive the same perturbed packet list, and each source bin is modified once,
+before normalization, so overlapping windows reuse the same modified counts.
+
+Ten conditions: clean; channel loss of 10/24/48 out of 96; thinning retention
+0.8/0.5; Poisson additions with rates 0.25/1.0 times frozen training raw-count
+means; unavailable bursts of one/five bins. Channel/count changes affect bin-end
+IDs [13210,13510), ends [1552.200,1558.200) s, the first eligible time plus
+2 through 8 seconds. Missing bursts start at ID 13310, end time 1554.200 s,
+the first eligible time plus 4 seconds. These intervals were not chosen by errors.
+
+Hash-rank physical channel IDs using SHA-256 of
+phase6b-channel-loss-v1|20261118|source_sha256|channel_id, ascending hex.
+The exact first 48 are stored in config; nested prefixes of 10/24/48 define
+severities. Ten is ceil(10% of 96)=10, or 10.4167%. Disable all aggregated
+unit slots of each selected physical channel by setting raw counts to zero
+in the affected bins, retaining identities/order and source-valid status.
+Zero raw counts are generally nonzero after frozen normalization. Do not
+replace training-silent selected channels or choose subsets from model weights,
+activity or validation quality. Physical IDs do not prove stable isolated units.
+
+Thinning draws Binomial(raw_count, retention), seed 20261119. Added counts draw
+Poisson(multiplier * frozen training channel mean), seed 20261120. Nonnegative
+integer counts are preserved. Each PCG64 generator is keyed by SHA-256 of
+phase6b-count-v1|seed|source_sha256|partition|session|bin_id|channel_id;
+the first 16 digest bytes interpreted little-endian supply entropy. This makes
+draws independent of traversal/channel order and future packet counts. The same
+family seed is used at both severities, with no best-seed selection or inference
+of Poisson rates from validation. Exact rates and affected counts are saved.
+These are count observation simulations, not validated biological drift models.
+
+ReplayBin now has an explicit missing flag, default false for unchanged 6A
+inputs. A missing packet must have counts=None and source_valid=False; a flag
+with a count vector or valid source is rejected. Valid zero-count vectors remain
+ordinary observations. Missing bins clear history and produce no output. Keep
+the same skip/reset policy for all models: wait for ten valid consecutive bins;
+Kalman then updates its training prior without an extra transition, GRU starts
+the rebuilt window from zero. No prediction-only Kalman step or ridge/GRU
+imputation is used in this round. The distinction is explicit, not silent zero fill.
+
+Precompute support from packet metadata/history rules before model inference,
+without labels/weights/errors. One missing bin suppresses IDs 13310–13319,
+resuming at 13320; five suppress IDs 13310–13323, resuming at 13324. Primary
+metrics for every model/condition use the intersection: 2761 original eligible
+rows, excluding IDs 13310–13323 (14 rows), fixed before scores. No other row
+is removed. Report each condition's availability and clean on those exact rows
+as a secondary comparison: 2775 ordinary, 2765 one-bin loss, 2761 five-bin loss.
+Keep the original nine baseline warm-up exclusions. CSV reasons distinguish
+missing packets, recovery and extra exclusions solely for shared primary scoring.
+No-emission predictions are blank/NaN in exports/plots. Finite scorer placeholders
+outside its mask are never emitted or scored. Accuracy must be read with coverage.
+
+Use unchanged evaluate_velocity per-axis/overall RMSE in mm/s and per-axis/mean
+R². Clean replay reproduces Phase 6A values/metrics exactly on all 2775 original
+rows. Common-mask clean RMSE is ridge 52.262457, GRU 54.479093, Kalman 102.415704
+mm/s, reflecting the changed scoring population, not changed predictions.
+Missing-packet ridge/GRU predictions equal clean on retained rows; they abstain
+on suppressed rows. Kalman's reset changes later retained outputs. These are
+different algorithms under the same missing-data policy, not evidence that
+missing inputs are harmless. Coverage is 99.6396% / 99.4955% for the two bursts.
+
+All ten conditions and 30 model/condition replays completed with zero failures,
+without extra conditions. Accuracy-versus-severity and fixed channel-loss-48 /
+missing-5 traces use the predeclared [1550.200,1560.200) s interval. Manifest,
+seeds, exact subsets/affected IDs, rates, packet hashes, raw before/after vectors,
+missing flags, masks/reasons, predictions, metrics, reset IDs, versions and
+source/model/code hashes remain under ignored runs/. Audit independently checks
+all 90 metric groups across primary/available/paired-clean populations within
+1e-10, regenerates 2106 affected inputs exactly, and verifies unchanged inputs
+outside the declared intervals. See [complete results](../reports/phase6b_robustness.md)
+and its linked CSV for every model's axis metrics, including slight improvements.
+
+One session/subset realization and six seconds of disruptions cannot establish
+real electrode instability, cross-session robustness or reliable missing-input
+control. Test examples remain closed; common source/global metadata loading is
+unchanged. No new latency measurement, retraining or cursor video in 6B.

@@ -2488,3 +2488,171 @@ Independent GRU-reset and percentile explanations remain pending.
 Phase 6A is implemented and verified locally, uncommitted; user runs Git.
 Stop here. Next increment: **predefined input-disruption experiments, followed
 by visual cursor replay built from verified predictions**.
+
+## Phase 6B — controlled validation input disruptions (2026-11-18)
+
+### Repository gate and scope
+
+Read CODEX.md, progress/methods/decisions, Phase 6A report, replay/metric/model
+interfaces and tests, saved validation CSV and provenance. No applicable AGENTS.md
+was found in the repository or checked ancestors. Actual branch main at
+6bbe82611ac3ca471d913217850457fa45a4e263 (verify sequential neural replay and
+inference latency), matching local origin/main and fresh GitHub ls-remote.
+Phase 6A is committed/pushed, superseding its historical uncommitted note.
+The tracked tree/index were clean on entry; unrelated untracked %SystemDrive%/
+and the existing README redesign were preserved. CODEX.md, recordings,
+processed data, checkpoints and runs remain excluded/untracked. No assistant
+staging, commit, push, merge or branch switch.
+
+Prior teach-back follow-up: after initially confusing p95 with an all-call
+deadline guarantee, the user correctly counted five deadline misses in the
+95-at-6-ms/five-at-100-ms example. This demonstrates the concrete distinction
+after correction; independent GRU-reset reasoning remains pending.
+
+### Explanation and plan before disrupted inference
+
+Explained channel silence versus count-rate modifications versus an unavailable
+packet. Zero raw counts remain an observation and are generally nonzero after
+standardization; missing means no count vector, not a zero vector. Frozen models
+and training-only statistics are reused; these are simulated observation failures,
+not validated biological drift or real electrode-instability measurements.
+
+Before any disrupted prediction, wrote configs/robustness.toml and the report's
+declaration. Ten fixed conditions: clean; nested loss of 10/24/48 physical
+channels; thinning retention 0.8/0.5; Poisson rates 0.25/1.0 times frozen raw
+training means; missing bursts of one/five bins. Three saved models, representative
+GRU seed 2026 only, no retraining or extra sweeps. Channel loss/count changes
+affect IDs [13210,13510), ends [1552.200,1558.200) s. Missing starts at ID 13310,
+1554.200 s. Fixed intervals derive from first eligible timestamp plus 2/8/4 s,
+without examining error quality.
+
+Channel seed 20261118 hash-ranks source SHA plus physical ID; exact nested
+prefixes are in config/report/manifest. Physical unit aggregation/order stays
+fixed. The subsets contain 2/3/6 training-silent channels, retained rather than
+replaced to strengthen effects. Thinning seed 20261119 and Poisson seed 20261120
+are keyed per source/session/partition/bin/channel, independent of future values
+and loop order. Raw source packets are perturbed once and reused across models
+and overlapping windows; frozen normalization follows.
+
+All models retain 6A skip/reset: missing=True, counts=None, source_valid=False;
+clear history and resume only after ten valid bins, with Kalman training-prior
+reset. No prediction-only extrapolation or imputation was tested. Availability
+was computed from metadata/history before inference, not prediction errors.
+The saved timestamped manifest includes exact subsets, affected IDs, seeds,
+Poisson rates, packet hashes and all common/available masks before the first
+model pass. Primary score population is the same 2761 rows for every pair,
+excluding IDs 13310–13323. Secondary scores pair each condition's available rows
+with clean on those same rows, and report emitted coverage.
+
+### Implementation and actual completed results
+
+- src/neurodecode/streaming.py: optional explicit missing flag/count absence;
+  reject inconsistent missing packets, retain all ordinary 6A behavior.
+- src/neurodecode/robustness.py: finite condition declaration, hash-ranked
+  physical subsets and deterministic scoped integer-count changes.
+- scripts/evaluate_robustness.py: trusted artifact/source checks, exact
+  declaration before inference, 30 model/condition passes, three scoring
+  populations, coverage/reasons/reset IDs, raw-input logs and fixed figures.
+- scripts/audit_robustness.py: artifact-only independent score/identity/mask
+  audit and regeneration of all affected inputs; no inference/model loading.
+- tests/test_robustness.py: 16 synthetic cases alongside 34 retained replay
+  cases. Report, curated complete metric CSV and three images, methods,
+  decisions and this progress record. No README rewrite or cursor work.
+
+Run runs/phase6b-disruptions-round1: all ten declared conditions / 30 model
+pairs completed, zero failures, no planned condition left unrun and none added.
+Clean replay reproduces saved Phase 6A predictions and metrics exactly on all
+original 2775 rows. Original clean overall RMSE is ridge 52.571380,
+GRU 54.791919, Kalman 102.838507 mm/s. The common-mask clean values below
+differ only because 14 rows are removed from every condition, including clean.
+
+| Condition | Ridge overall RMSE | GRU overall RMSE | Kalman overall RMSE |
+| --- | ---: | ---: | ---: |
+| Clean | 52.262457 | 54.479093 | 102.415704 |
+| Channel loss 10/96 | 52.544563 | 54.373814 | 102.788947 |
+| Channel loss 24/96 | 53.437017 | 55.083326 | 103.205030 |
+| Channel loss 48/96 | 53.490490 | 55.782373 | 103.607789 |
+| Retain 80% events | 52.473815 | 55.156052 | 102.968828 |
+| Retain 50% events | 52.591852 | 55.910255 | 105.071836 |
+| Poisson 0.25× training mean | 52.572650 | 54.915500 | 102.080639 |
+| Poisson 1× training mean | 53.501119 | 56.138973 | 110.360574 |
+| One missing bin | 52.262457 | 54.479093 | 102.593141 |
+| Five missing bins | 52.262457 | 54.479093 | 102.482924 |
+
+All primary values use 2761 identical targets; full axis RMSE/R² and mean R²
+for all 30 pairs are in reports/phase6b_metrics.csv. Most changes worsen
+scores. Retain the slight GRU improvement with 10 lost channels and Kalman
+improvement with small Poisson additions, without tuning or claiming benefit.
+Single subset/seed, short exposure and temporal dependence limit inference.
+
+One missing bin suppresses 10 emissions, coverage 2765/2775=99.6396%, resuming
+ID 13320 at 1554.400 s. Five suppress 14, coverage 2761/2775=99.4955%, resuming
+ID 13324 at 1554.480 s. All models use the same policy. Ridge/GRU retained-row
+values equal clean because complete windows contain no missing counts; this is
+abstention, not successful prediction through missing input. Kalman loses its
+previous state and differs after reset. Missing CSV values are blank, never
+fake zero velocities; scoring placeholders outside masks are never emitted.
+Exclusions distinguish unavailable bins, recovery and extra shared-mask exclusions.
+
+Fixed severity chart and predeclared channel-loss-48/missing-5 traces use
+[1550.200,1560.200), unchanged earlier-model interval, no smoothing/shift or
+gap interpolation. Visually checked all axes, units, legends, affected shading
+and no-emission gaps. Three curated PNGs plus metric CSV total 1,117,729 bytes;
+bulk raw logs/manifests/predictions remain ignored.
+
+Example bin 13219 at 1552.380 s is the tenth affected channel-loss bin, so its
+entire history is within exposure. Channel-loss-48 reduces current events
+30→15; M1 012 changes 1→0. Ridge uses the modified ten-bin flattened features,
+GRU reads that window from zero state, Kalman uses the modified current bin and
+its own estimate already affected by earlier damaged bins. Outputs respectively
+[18.179718,69.174759], [-17.621878,19.611753], [-45.912276,95.215492] mm/s;
+actual [-62.878544,47.330751] is scoring only. At missing ID 13310 no model emits;
+after five-bin loss, ID 13324 uses newly valid history and Kalman training prior.
+
+### Checks actually executed
+
+~~~powershell
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider tests/test_robustness.py tests/test_streaming.py --tb=short -x
+.venv/Scripts/python.exe -u scripts/evaluate_robustness.py phase6b-disruptions-round1
+.venv/Scripts/python.exe scripts/audit_robustness.py phase6b-disruptions-round1
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider --tb=short
+.venv/Scripts/ruff.exe check --no-cache .
+.venv/Scripts/ruff.exe format --check --no-cache .
+uv --cache-dir .uv-cache lock --check --offline
+uv --cache-dir .uv-cache sync --locked --offline --check
+~~~
+
+50 focused tests passed; full suite 319 passed (303 retained plus 16 new).
+Tests verify deterministic/count-valid scoped perturbations, order-independent
+identity keys, no input mutation, future causality, missing versus zero, resets
+and exact clean behavior. Lint initially rejected an assigned plotting lambda;
+replaced it with a function before the real run. Final lint/format, offline lock
+and synchronized-environment checks passed. No dependency install or change.
+Independent artifact audit agrees within 1e-10 for all 90 primary/available/
+paired-clean metric groups across 30 pairs, exactly regenerates 2106 affected
+inputs and verifies unchanged hashes outside declared intervals. Saved targets,
+timestamps and common masks agree exactly. No failed experiment or blocked check.
+
+Environment: Python 3.11.17, torch 2.14.1+cpu, NumPy 2.4.6, Matplotlib 3.11.2,
+threadpoolctl 3.7.0, Windows build 26300, CPU with one torch/native thread.
+Manifest records source/split/target/scaler/channel/unit/model identities and
+actual base/dirty code hashes. Audit code has its own hash. Timing from this
+round is not an inference benchmark. Common loader reads source/global metadata;
+no test windows/targets/predictions/metrics/disruptions were constructed.
+
+### Learning, limitations and next increment
+
+Explained simulated channel silence/count changes/packet absence, raw versus
+standardized zero, fixed subset and seed choices, missing-data policy and the
+accuracy/coverage tradeoff. Independent teach-back remains pending; no new
+mastery is claimed. Existing Kalman state/covariance and corrected deadline
+example remain recorded without claiming broader GRU/percentile mastery.
+
+Limits: one session and one realization, correlated overlapping windows,
+training-silent selected channels, six seconds of exposure diluted in full-span
+scores, no biological validation, no alternative missing policies or adaptation,
+and no accuracy measurement where the policy abstains. No significance, human,
+clinical or final-test claim. No fresh-clone/cross-platform reproduction,
+new latency measurement, retraining, additional sweep or cursor integration/video.
+Phase 6B implemented/verified locally; changes remain uncommitted. User runs Git.
+Stop here. Next increment: **visual cursor replay from verified predictions**.

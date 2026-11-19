@@ -206,3 +206,21 @@ replay; small differences from saved batch-256 outputs reflect float32 arithmeti
 Warmed p95 is below 20 ms, but all models have maxima above it. Preserve this
 limitation and make no hard real-time claim. Next increment tests predefined
 input disruptions before producing cursor video from verified predictions.
+
+## 2026-11-18 — Fixed disruption round with coverage-aware scoring
+
+Declare ten validation-only conditions before inference: clean, nested
+10/24/48-channel loss, two thinning retentions, two training-rate Poisson levels
+and one/five-bin missing bursts. Hash-select physical channels from source and
+IDs, retaining silent selections. Key count RNG by source/bin/channel identity;
+apply raw modifications once per source packet and reuse across all models.
+
+Represent missing explicitly as missing=True/counts=None/invalid source.
+Retain Phase 6A's uniform skip/reset behavior for this round instead of adding
+unvalidated imputation or continuous Kalman prediction-only carry. Predeclare
+the union-of-missing/recovery exclusion mask for all conditions and pair each
+available-row score with clean on those exact rows. Report coverage prominently:
+no-emission intervals are not evidence of decoding accuracy. No tuning after
+scores or extra candidates. All declared conditions completed; slight gains
+under two disruptions are retained without claiming noise/removal is beneficial.
+Stop after Phase 6B; next is visual cursor replay from verified predictions.
