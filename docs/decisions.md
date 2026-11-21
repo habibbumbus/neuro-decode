@@ -242,3 +242,29 @@ Show full-validation velocity scores separately from local integrated distance.
 Export video/still and provenance under ignored runs/, inspect actual decoded
 first/middle/last frames, and commit only source/config/tests/docs. No test-set
 opening, model tuning, live-control implication or new processing-time claim.
+
+## 2026-11-19 — Freeze final evaluation before opening test (Phase 7A)
+
+Adopt [the concrete final-evaluation specification](final_evaluation.md) and
+`configs/final_evaluation.json`, canonical SHA-256
+`e69c7f3181c479fdf0df076d256e7beb1cc7197c758deee7e8fab805c23832fc`.
+Retain the existing chronological test boundary, preprocessing, training-fitted
+transforms and model weights. Evaluate all five frozen predictors on identical
+eligible rows; GRU 2026 is representative, 2027/2028 remain validation-only.
+Use overall mm/s RMSE as primary, axis RMSE and axis/mean R² as secondary.
+
+Choose the test replay interval by the first retained segment's grid only:
+[1606.320,1616.320) s. Require 500 eligible consecutive endpoints; do not move
+the interval after seeing data or predictions. Preserve poor trajectories and
+use the qualified integrated-velocity reference. No model-specific row masking,
+silent model removal, refit or presentation-driven clip selection.
+
+Require independent exported-metric/identity/provenance checks, sequential/offline
+agreement, unchanged parameters, committed frozen implementation and an audited
+validation rehearsal before future test access. Stop on failed integrity checks;
+document any discovered defect and repeat affected validation checks with an
+explicit revised freeze. Phase 7A rehearsed validation only and passed all 346
+tests and repository checks. No scientific defect was found. No test command
+was invoked. Review/commit is the user's next action; opening test needs a later
+explicit instruction. One recording cannot establish generalization across
+sessions, participants or live closed-loop operation.

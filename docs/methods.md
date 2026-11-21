@@ -1537,3 +1537,41 @@ velocity RMSE or establish GRU superiority. Reference integration is not the
 original sampled cursor trajectory. No new latency benchmark, fresh-platform
 reproduction, live control or clinical claim. See [demo commands](demo.md) and
 the [Phase 6C report](../reports/phase6c_cursor.md).
+
+## Phase 7A: frozen final evaluation, before test access
+
+The authoritative [final-evaluation specification](final_evaluation.md) and
+`configs/final_evaluation.json` freeze the retained test interval
+[1606.1000000000001,1662.0) s, existing Phase 2D preprocessing/support rules and
+the five predictors: zero, training mean, ridge lambda 1000, frozen Kalman and
+representative GRU seed 2026. Other GRU seeds remain validation-only. No fitting,
+model selection or new test robustness condition is permitted. Source/model,
+split/scaler/channel, implementation and environment hashes are checked before
+opening data. The canonical freeze digest is
+`e69c7f3181c479fdf0df076d256e7beb1cc7197c758deee7e8fab805c23832fc`.
+
+Score every eligible target on the same rows for all five models. Primary metric
+is overall velocity RMSE in mm/s; report axis RMSE, axis/mean R², counts, coverage
+and exclusions. Undefined R² is null. Reuse verified sequential history/reset
+semantics, compare with a separate frozen offline pass, require unchanged model
+state, and independently recompute metrics from timestamped CSV using Python
+`math.fsum`. Verify source-window/behavior support within the frozen partition
+and segments with no future sample inputs. Missing model outputs or provenance,
+alignment, numerical or metric failures stop evaluation; do not drop a model.
+
+The timestamp-only test clip is fixed before access at [1606.320,1616.320) s,
+500 consecutive completed-bin endpoints. If unavailable, stop rather than select
+another clip. Reference is target-velocity integration with the Phase 6C common
+anchor/duration rules, never later position corrections. Tables, full-partition
+metric bars, fixed-clip velocity traces, cursor video/still and all provenance
+remain under ignored runs/. No overlapping-bin confidence interval is claimed.
+
+`scripts/evaluate_final.py preflight` loads no recording. Explicit validation
+mode alone was rehearsed: 2,775 rows, saved Phase 5B/6A agreement, independent
+metric/provenance audit, fixed validation exports. Test mode additionally requires
+the exact freeze digest, committed frozen implementation and passing rehearsal
+audit. Its exact later commands and expected outputs are in the specification;
+they were not run in Phase 7A. Existing source loading for validation reads the
+acquired file/global metadata, but no test examples/targets/windows are prepared.
+All 346 tests, lint/format, offline lock/environment checks passed. This is a
+protocol freeze, not final test evidence or authorization to open test.

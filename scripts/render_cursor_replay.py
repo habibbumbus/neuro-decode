@@ -28,7 +28,16 @@ from neurodecode.evaluation import (
 )
 
 
-def export_animation(output, paths, clip_times, settings, audit, validation_metrics):
+def export_animation(
+    output,
+    paths,
+    clip_times,
+    settings,
+    audit,
+    validation_metrics,
+    *,
+    partition="validation",
+):
     """Fixed axes and synchronized 50-fps endpoints; no inference or corrections."""
     from matplotlib.animation import FFMpegWriter
     from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -55,7 +64,7 @@ def export_animation(output, paths, clip_times, settings, audit, validation_metr
     figure.text(
         0.055,
         0.905,
-        "VALIDATION ONLY  |  indy_20161005_06  |  fixed first 10 seconds  |  not live brain control",
+        f"{'VALIDATION ONLY' if partition == 'validation' else 'FROZEN HELD-OUT TEST'}  |  indy_20161005_06  |  timestamp-fixed 10 seconds  |  not live brain control",
         fontsize=12,
         color="#4b5563",
     )
@@ -140,7 +149,7 @@ def export_animation(output, paths, clip_times, settings, audit, validation_metr
     figure.text(
         0.59,
         0.450,
-        "(0, 0) mm at 1550.180 s, before the clip.\n"
+        f"(0, 0) mm at {paths['reference'].time_s[0]:.3f} s, before the clip.\n"
         "Position = anchor + sum(velocity x neural-bin duration).\n"
         "Actual durations; no smoothing or position corrections.",
         fontsize=11,
@@ -150,7 +159,7 @@ def export_animation(output, paths, clip_times, settings, audit, validation_metr
     figure.text(
         0.59,
         0.395,
-        "Full-validation velocity RMSE [mm/s]",
+        f"Full-{partition} velocity RMSE [mm/s]",
         fontsize=14,
         weight="bold",
         color="#172536",
@@ -163,7 +172,12 @@ def export_animation(output, paths, clip_times, settings, audit, validation_metr
     figure.text(
         0.59,
         0.325,
-        "Ridge has the lowest validation velocity RMSE.\nAnimation does not establish accuracy.",
+        (
+            "Ridge has the lowest validation velocity RMSE."
+            if partition == "validation"
+            else "Frozen models and timestamp-selected clip; no test tuning."
+        )
+        + "\nAnimation does not establish accuracy.",
         fontsize=11,
         color="#374151",
     )
@@ -188,7 +202,12 @@ def export_animation(output, paths, clip_times, settings, audit, validation_metr
     figure.text(
         0.055,
         0.045,
-        "1x playback (50 fps) is separate from processing latency.  Test partition remains closed.",
+        "1x playback (50 fps) is separate from processing latency.  "
+        + (
+            "Test partition remains closed."
+            if partition == "validation"
+            else "Held-out test shown under the frozen protocol."
+        ),
         fontsize=11,
         color="#4b5563",
     )

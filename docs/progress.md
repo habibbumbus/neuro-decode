@@ -2797,3 +2797,72 @@ metrics. Independent integration/position-correction teach-back remains pending.
 Phase 6C is implemented/verified locally, uncommitted; user runs Git. Stop here.
 Next increment: **review and freeze the release evaluation/demo protocol**;
 no final-test opening is authorized by this phase.
+
+## Phase 7A — final evaluation protocol frozen; test remains closed
+
+### Prior checkpoint and local work
+
+Read CODEX.md and relevant progress, methods, decisions and model/replay reports.
+No applicable AGENTS.md was found. Verified Phase 6C report, saved provenance,
+integration audit, video properties and encoded first/middle/last frames; all
+13 focused cursor tests passed. Actual branch main at
+`f94484225d9170ecf2dddb1365779e150dd24745` matched the remote at inspection.
+Tracked work initially was clean; unrelated untracked `%SystemDrive%/` is
+preserved. Phase 6C's earlier uncommitted status above is now superseded.
+
+### Frozen deliverables and checks
+
+See [final evaluation specification](final_evaluation.md) and
+`configs/final_evaluation.json` for exact boundaries, model/artifact hashes,
+preprocessing, common rows, metric definitions, reset rules, failure policy,
+figures, commands and output names. Canonical freeze SHA-256:
+`e69c7f3181c479fdf0df076d256e7beb1cc7197c758deee7e8fab805c23832fc`.
+The test clip [1606.320,1616.320) s was selected from timestamps alone, not
+trajectories; eligibility and actual test sample count remain unknown.
+
+Implemented `scripts/evaluate_final.py`, pure evaluation checks in
+`src/neurodecode/final_evaluation.py` and artifact-only `scripts/audit_final.py`.
+The cursor renderer now accepts partition-aware presentation labels and derives
+the anchor caption from its actual inputs; integration semantics are unchanged.
+Test access requires the exact freeze token, committed bound implementation and
+audited validation rehearsal. No command invokes fitting. Existing output
+directories are protected from overwrite; integrity failures stop execution.
+
+Completed only `runs/phase7a-validation-dry-run/`: all 2,775 validation rows,
+five predictors, unchanged weights, saved Phase 5B/6A agreement, independent
+CSV metrics/support/provenance audit, fixed-interval figures and video.
+Sequential/offline maximum absolute differences [mm/s]: zero 0, mean 0,
+ridge 3.126388e-13, Kalman 0, GRU 0. Validation overall RMSE [mm/s]: zero
+72.817486, mean 72.817654, ridge 52.571380, Kalman 102.838507, GRU 54.791919.
+These are validation rehearsal results, not final test scores. Video export
+and validation labels were inspected. No model/scientific defect was found.
+
+All 346 tests passed (332 retained, 14 new evaluation checks). New coverage
+includes synthetic partition/time support, independent metrics/null R²,
+label-independent prediction, immutable parameters, pre-load authorization and
+artifact-corruption rejection. Ruff lint/format, offline lock consistency and
+locked environment checks passed. No new dependency. Preflight and artifact-only
+audit are repeatable without recording loading; exact commands are documented.
+
+No test examples, predictions, plots or metrics were constructed; no test-mode
+command was run. Validation preparation retains the existing whole-recording
+source/global metadata loader, a boundary explicitly disclosed in the protocol.
+All generated artifacts/media remain ignored under runs/. CODEX.md, recordings,
+checkpoints and bulk runs remain outside tracked files. Nothing staged/committed/
+pushed by the agent.
+
+### Understanding, limitations and next checkpoint
+
+The user's Phase 6C explanation correctly recognizes that intervening with the
+reference changes an uncorrected replay; such corrections would erase accumulated
+drift. Explained that held-out data from one recording can assess the frozen
+procedure on its later segment, but cannot establish new-session/person
+generalization, live BCI control or clinical benefit. Choosing a good-looking
+test clip afterward biases the presentation even with unchanged aggregate RMSE.
+Phase 7A teach-back remains pending; do not infer mastery from the prior answer.
+
+No unresolved implementation blocker. The deliberate next gate is user review
+and focused Phase 7A commit of source/tests/config/docs, preserving ignored local
+models and rehearsal evidence. Stop before test access. A separately authorized
+next increment may run the frozen final test command and independent audit;
+review/commit alone does not authorize that run.
