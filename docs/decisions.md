@@ -268,3 +268,19 @@ tests and repository checks. No scientific defect was found. No test command
 was invoked. Review/commit is the user's next action; opening test needs a later
 explicit instruction. One recording cannot establish generalization across
 sessions, participants or live closed-loop operation.
+
+## 2026-11-23 — Stop on pre-access committed-source encoding failure
+
+Phase 7A is committed/pushed at e64dc2a. Local frozen preflight passed; the
+committed-code gate failed on scripts/evaluate_baselines.py before test access.
+Default Windows cp1252 decoding changes Git's UTF-8 content before hashing;
+explicit UTF-8/LF committed bytes match the frozen hash exactly. Preserve this
+diagnostic in the [Phase 7B blocker report](../reports/phase7b_final.md) and ignored
+runs/phase7b-preaccess-integrity-20261123/failure.json.
+
+Follow the declared stop rule despite the apparent false mismatch. Do not alter
+encoding environment, code or digest to run test in this checkpoint. No test
+command, inference, figures or metrics were produced. A separate reviewed repair
+and regression test must revise the bound freeze and validation evidence before
+a renewed test request. Original freeze and rehearsal remain unchanged. There
+are no Phase 7B scores or completed final evaluation to claim.

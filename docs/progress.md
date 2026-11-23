@@ -2866,3 +2866,48 @@ and focused Phase 7A commit of source/tests/config/docs, preserving ignored loca
 models and rehearsal evidence. Stop before test access. A separately authorized
 next increment may run the frozen final test command and independent audit;
 review/commit alone does not authorize that run.
+
+## Phase 7B — blocked at committed-code gate before test access (2026-11-23)
+
+The user explicitly authorized frozen test evaluation. Read the local contract,
+freeze and relevant records/model reports. Phase 7A main commit
+`e64dc2a545f3f1c26afa4459386aa2a13c58377f` was verified against a fresh GitHub
+main lookup. Tracked files/index initially clean; unrelated `%SystemDrive%/`
+preserved. No applicable AGENTS.md found. CODEX.md/raw data/checkpoints/runs
+remain outside tracked files. Nothing staged, committed or pushed by the agent.
+
+Local preflight passed without a recording loader: unchanged frozen code,
+source/split metadata, model/scaler/reference hashes and environment. The
+additional committed-code gate then failed on scripts/evaluate_baselines.py.
+Byte-level diagnosis shows committed explicit UTF-8/LF equals local and frozen
+hash `2e92954c953b46d259bb313cc53910275330ab13cbd38c14df4e9b1371237349`.
+The gate's default cp1252 subprocess text decoding instead hashes to
+`52bd557f25ba2bb02911962cb37f6a95fa26e1116494af27df7fa3c4e10308d9`.
+This is a Windows provenance-check decoding defect, not changed model weights.
+See [the blocked final-evaluation report](../reports/phase7b_final.md) for exact
+commands, evidence and scope. Diagnostic JSON remains ignored under
+runs/phase7b-preaccess-integrity-20261123/.
+
+Stopped as required. No test-mode invocation, test examples, predictions, metrics,
+figures or video. runs/phase7b-final-test/ does not exist. No score comparison or
+visual test inspection can be reported. No code, freeze, environment or scientific
+rule was revised to bypass the gate. The scheduled validation artifact audit was
+after the failing gate and therefore was not reached in this round.
+
+Explained that a frozen test measures later-block velocity error without using
+those labels for model selection, but one recording is not evidence about new
+people/sessions/live control. The user's Phase 7A answer recognizes that the
+preselected clip is part of the experiment and should be retained even if poor;
+broader generalization understanding remains pending. New teach-back is pending.
+
+Next increment must explicitly repair UTF-8 committed-source checking, add a
+non-ASCII regression case, revise the bound freeze and repeat affected validation
+checks/rehearsal, preserving old evidence. Review/commit/push that revised freeze
+before another authorized test attempt. Phase 7B evaluation is not complete.
+
+Verification after the stop: all 346 existing tests passed in 34.59 seconds,
+including the 14 final-evaluation tests; Ruff lint/format, git diff whitespace,
+offline lock consistency and locked environment checks passed. No dependency
+changes. The existing tests do not catch this actual Windows subprocess-decoding
+failure, so they do not supersede the failed pre-access gate. No new regression
+test was added because this checkpoint stops before an implementation repair.

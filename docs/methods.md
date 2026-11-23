@@ -1575,3 +1575,15 @@ they were not run in Phase 7A. Existing source loading for validation reads the
 acquired file/global metadata, but no test examples/targets/windows are prepared.
 All 346 tests, lint/format, offline lock/environment checks passed. This is a
 protocol freeze, not final test evidence or authorization to open test.
+
+### Phase 7B pre-access integrity stop (2026-11-23)
+
+The authorized final test attempt stopped before constructing test examples.
+Local preflight passed, but committed-source verification falsely differed
+because its git subprocess used Windows cp1252 text decoding instead of explicit
+UTF-8. Independent UTF-8/LF byte comparison matches the frozen/local source.
+No test command ran and no preprocessing, model, metric, exclusion or interval
+changed. The frozen fail-closed rule was followed; no test results exist.
+See the [blocker report](../reports/phase7b_final.md). A reviewed provenance-gate
+repair requires an updated bound freeze and validation evidence before opening
+test. This methods note records a failure, not a protocol amendment.
