@@ -302,3 +302,30 @@ passes the repaired gate; the new uncommitted freeze is correctly rejected.
 Seven regression cases catch non-ASCII cp1252 failure and genuine alteration.
 See [repair report](../reports/phase7b_gate_repair.md). Stop before test access;
 review and commit this repair separately before a new test-opening request.
+
+## 2026-11-23 — Execute the repaired freeze once and retain all test results
+
+User authorized held-out evaluation after repair commit/push. Verify HEAD and
+GitHub main at 7d9c50c, all 29 bound committed-file identities, exact freeze,
+model/scaler/environment identities and passing validation evidence before
+opening test. Keep revised freeze
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`
+unchanged. Test-opening event 2026-11-23T18:25:42.958569+00:00; one test command,
+one artifact-only independent audit, both passed. Preserve original blocker and
+repair history/evidence; no retries or settings changes after seeing scores.
+
+Report all five models on 2,784 common eligible rows/100% coverage: overall RMSE
+[mm/s] zero 83.143527, training mean 83.143644, ridge 60.421673, Kalman 134.059526,
+GRU 2026 67.360708. Ridge has the lowest frozen primary metric; do not use local
+trajectory appearance or another seed to claim GRU superiority. Retain Kalman's
+poor result. Compare with clean validation without model or exclusion changes.
+Independent metrics/identities/provenance, replay equivalence and all 353 tests
+passed. See [final report](../reports/phase7b_final.md).
+
+Retain the preselected [1606.320,1616.320) s clip with common fixed physical axes,
+qualified velocity-integration reference and uncorrected drift; inspect the
+actual encoded first/middle/last frames. Media, predictions and command logs stay
+under ignored runs/. The test block is now opened and cannot be reused as an
+untouched final estimate after test-informed changes. One recording/block does
+not establish transfer to another session, clinical benefit or live brain
+control. Stop after Phase 7B for the user's review/learning/Git checkpoint.

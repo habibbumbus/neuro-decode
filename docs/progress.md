@@ -2971,3 +2971,87 @@ preserved. Only validation windows were constructed; the existing global source
 loader caveat remains. No unresolved implementation blocker; the intentional
 remaining gate is user review/commit of the revised freeze, followed by a
 read-only committed-gate check and a separate test-opening instruction.
+
+## Phase 7B — frozen held-out evaluation completed (2026-11-23)
+
+### Authorization, freeze and actual execution
+
+Read CODEX.md, original/revised Phase 7A specification, blocker and gate-repair
+reports and relevant records. No applicable AGENTS.md. User explicitly resumed
+test execution after repair review/commit/push. HEAD and fresh GitHub main both
+matched `7d9c50cf52844f7ff2b0b05b65f402f629983a94`. Tracked tree/index were clean;
+unrelated untracked `%SystemDrive%/` was preserved (the recorded dirty flag is
+true for that directory). All 29 declared committed-file identities and exact
+revised freeze/evidence gates passed, along with local model/scaler/reference/
+environment preflight and independent validation artifact audit. Comparing the
+original freeze confirmed no scientific field changed beyond the documented
+encoding repair/provenance/evidence identity.
+
+Freeze SHA-256 remains
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`.
+Opening event: 2026-11-23T18:25:42.958569+00:00, recorded before source load/test
+preparation. Ran the exact frozen test command once and then the artifact-only
+independent audit; both exited 0. No failure, protocol revision or corrective
+repeat after access. Source/model/configuration remained unchanged. Original
+blocker history/evidence and both validation rehearsals are preserved.
+
+### Results and evidence
+
+See [complete final report](../reports/phase7b_final.md) for every axis/overall
+metric, artifact hashes, exact commands, plots/video paths, audit and limits.
+All five predictors score identical 2,784 target rows, IDs 15916–18699, ending
+1606.320–1661.980 s inclusive. Of 2,793 complete source bins, nine history-only
+warm-up bins are excluded by the original rule; no further invalid-window or
+model-specific exclusions. Each model covers 100% of common eligible rows.
+
+| Model | Test overall RMSE [mm/s] | Test mean R² | Validation overall RMSE [mm/s] |
+| --- | ---: | ---: | ---: |
+| Zero | 83.143527 | -0.000027 | 72.817486 |
+| Training mean | 83.143644 | -0.000029 | 72.817654 |
+| Ridge lambda 1000 | 60.421673 | 0.464330 | 52.571380 |
+| Frozen Kalman | 134.059526 | -1.538225 | 102.838507 |
+| GRU seed 2026 | 67.360708 | 0.338009 | 54.791919 |
+
+Ridge retains the lowest predeclared primary RMSE; GRU does not beat it. Kalman
+remains worse than trivial predictors. Test RMSE is higher for every model;
+baseline error also increases, so the two time blocks differ in target movement
+magnitude. No new metric was chosen to change the ranking. Other GRU seeds stay
+validation-only. No training, calibration, settling exclusions or new conditions.
+
+Offline/replay maximum absolute differences [mm/s]: zero 0, mean 0,
+ridge 3.410605131648481e-13, Kalman 0, GRU 0. All exact row/source identities,
+reset rules, support/no-future checks, before/after parameter/scaler digests and
+numerical tolerances pass. One initial reset at bin 15916 for each decoder;
+no later gaps. Artifact-only audit independently recomputes all metrics from
+CSV with Python fsum, tolerance 1e-10, and verifies hashes/identities/provenance.
+Test run.json SHA-256:
+`87c10c06a2635a3b506b693cf2d024c3cd39ecadf971a521ecea32f803c94bc2`.
+All 353 tests passed in 31.14 seconds; Ruff lint/format and offline lock/environment
+checks passed. No dependency changes.
+
+Only predeclared test figures/replay were generated under ignored
+runs/phase7b-final-test/. The fixed [1606.320,1616.320) s clip has 500 frames at
+50 fps, 10 seconds, 1600×900. Inspected plots and decoded frames 0/250/499 for
+correct offline/frozen-test/reference labels, times, common physical axes and
+visible Kalman drift. No alternate interval. Reference is target-velocity
+integration: 40/500 tracker intervals differ from 20 ms, so it is not an exactly
+aligned original tracker-position path. No smoothing or position corrections.
+Complete pre-access evidence, command logs and execution_summary.json are under
+ignored runs/phase7b-opening-preflight/. Exact reproduction/read-only review
+commands are in the report; existing output directories are protected.
+
+### Learning, limits and stopping point
+
+Explained before access what a frozen chronological held-out block measures.
+This is offline velocity decoding from one recorded nonhuman-primate session,
+not evidence of transfer to another session/person, clinical benefit, live
+brain-controlled cursor operation or a hard real-time guarantee. Correlated
+overlapping windows are not independent trials. A favorable integrated path
+cannot replace full-block velocity scoring. No significance claim.
+
+Test is now opened; future test-informed method changes are exploratory and
+cannot claim this block remains untouched. Phase 7B is complete with no unresolved
+execution/audit blocker. Stop for user review, teach-back and focused results
+commit. No next experiment is authorized. Teach-back on transfer limits remains
+pending; do not infer mastery. Nothing staged, committed or pushed by the agent;
+CODEX.md, raw data, checkpoints and bulk generated media remain outside Git.

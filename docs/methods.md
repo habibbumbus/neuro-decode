@@ -1613,3 +1613,35 @@ Phase 7A; no numerical inference or scoring behavior changed. All 353 tests and
 repository checks passed. Validation video/probe and decoded first/middle/last
 frames also passed inspection. Both original and revised evidence remain under
 ignored runs/; no test-mode invocation or test examples/predictions/metrics.
+
+### Phase 7B: executed frozen held-out block (2026-11-23)
+
+After explicit authorization, repair HEAD 7d9c50c was verified on GitHub main and
+all 29 committed implementation identities, exact revised freeze, saved models/
+scaler and validation evidence passed before access. Freeze
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`
+was executed once, opening event 2026-11-23T18:25:42.958569+00:00. No scientific
+rule, code, model or exclusion change. See [final report](../reports/phase7b_final.md)
+for full results, provenance, exact executed commands and read-only audit review.
+
+Retained test interval [1606.1000000000001,1662.0) s yields 2,793 complete count
+bins, nine common history-only exclusions and 2,784 scored rows, bin IDs
+15916–18699/endpoints 1606.320–1661.980 s. No invalid windows or model-specific
+exclusions; all predictors cover 100% of eligible rows. Score zero, frozen
+training mean, ridge lambda 1000, Kalman and GRU 2026 with unchanged shared
+RMSE/R² implementations. Independent Python-fsum CSV metrics and artifact/row/
+support audit passed (1e-10 metric tolerance); parameters/scaler unchanged.
+Ridge offline/replay max difference 3.410605e-13 mm/s, all other models zero.
+One training-prior/history reset at the initial row, no later gaps.
+
+The timestamp-only [1606.320,1616.320) s replay was exported without interval or
+axis changes, common one-time anchor and uncorrected integrated paths. Inspected
+encoded first/middle/last frames; 500 frames, 50 fps, 10 seconds, 1600×900.
+Reference remains tracker-derived velocity integration because 40/500 behavioral
+durations differ from neural-bin durations. Only prescribed figures/media were
+generated. All 353 repository tests and lint/format/lock/environment checks pass.
+
+This is one-session/one-time-block offline decoding, not cross-session transfer
+or live closed-loop control. Test has now been used; later test-informed changes
+are exploratory. No repeated scientific run or significance claim. Frozen
+specification and earlier blocker/repair records remain historical evidence.
