@@ -1,5 +1,10 @@
 # Frozen final evaluation — Phase 7A
 
+**Pre-test repair revision:** the current machine-readable freeze is
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`.
+The original Phase 7A digest/commands below are historical and superseded only
+as specified in the repair amendment at the end. Test remains unopened.
+
 This specification is written before test examples, predictions, figures or
 metrics are opened. Phase 7A implements and rehearses the command on validation
 and synthetic data only. The machine-readable companion is
@@ -251,3 +256,60 @@ usefulness, live closed-loop control or a hard real-time guarantee. Selecting a
 good-looking test clip after inspecting predictions would favor the presentation
 even if the full-partition score were unchanged. Use the frozen timestamp rule.
 This document and its commit do not themselves authorize test access.
+
+## Pre-test integrity repair amendment (2026-11-23)
+
+The committed Phase 7A gate falsely rejected authentic UTF-8 Git content under
+Windows cp1252. Preserve original commit e64dc2a and the committed
+[blocker record](../reports/phase7b_final.md). Capture `git show HEAD:<path>` as
+bytes, decode strict UTF-8, normalize CRLF and lone CR to LF, re-encode UTF-8 and
+SHA-256 the result. This matches the original local UTF-8/universal-newline
+identity; no other characters are transformed, omitted or replaced. Invalid
+UTF-8 or failed Git reads stop the gate. The same reader handles frozen JSON and
+all 29 bound files. Canonical JSON equality, every HEAD implementation identity,
+passing validation evidence and all prior test gates remain mandatory.
+
+The revised canonical freeze digest is
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`.
+Only the bound scripts/evaluate_final.py hash changes, from
+`3baae9fdc072a7bc2c0a54cfb598ccb330620f20ee6f94918ef2ee1bb27d5088` to
+`bcd83243753708010c2a3a0102fc85eee78acae2006643d3a452675dc9db7632`.
+Other JSON changes are repair provenance, phase description and a new
+validation evidence ID `phase7a-utf8-gate-validation` so original evidence is
+never overwritten. All model/artifact/environment identities, preprocessing,
+split bounds, eligibility, reset rules, metric implementations/tolerances,
+clip bounds and export settings are unchanged. This is a provenance repair,
+not a new scientific experiment or model selection round.
+
+Validation-only verification under this explicitly revised freeze:
+
+```powershell
+.venv/Scripts/python.exe scripts/evaluate_final.py preflight
+.venv/Scripts/python.exe -u scripts/evaluate_final.py validation --run-id phase7a-utf8-gate-validation
+.venv/Scripts/python.exe scripts/audit_final.py phase7a-utf8-gate-validation
+```
+
+Committed-identity checking can be rehearsed without opening any recording:
+
+```powershell
+.venv/Scripts/python.exe -c "import sys,json; sys.path.insert(0,'scripts'); from evaluate_final import read_committed_utf8,require_committed_freeze; require_committed_freeze(json.loads(read_committed_utf8('configs/final_evaluation.json'))); print('committed identities and validation evidence passed')"
+```
+
+Before the user commits this repair, that last command checks the original HEAD
+freeze and its original evidence. It does not certify the uncommitted revision.
+After the user commits it, the same command must check the revised freeze and
+new evidence; all declared source hashes must match HEAD. Local preflight alone
+never substitutes for committed identity. The revised full gate intentionally
+rejects the current uncommitted freeze before the user's repair commit.
+
+Future separately authorized test command, **NOT RUN during this repair**:
+
+```powershell
+uv run --locked python scripts/evaluate_final.py test --run-id phase7b-final-test --open-test-sha256 61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28
+uv run --locked python scripts/audit_final.py phase7b-final-test
+```
+
+The original test token is obsolete for the revised freeze. Preserve both
+rehearsals and the failure trail. Completed repair checks/results are recorded
+in the [repair report](../reports/phase7b_gate_repair.md); no test access is
+authorized by the repair or its commit.

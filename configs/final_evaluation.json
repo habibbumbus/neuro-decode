@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "phase": "7A; test unopened",
+  "phase": "7A pre-test UTF-8 integrity repair; test unopened",
   "source": {
     "record_id": 583331,
     "version": "v1",
@@ -1280,7 +1280,7 @@
       499
     ]
   },
-  "validation_run_id": "phase7a-validation-dry-run",
+  "validation_run_id": "phase7a-utf8-gate-validation",
   "test_run_id": "phase7b-final-test",
   "validation_references": {
     "five_model": {
@@ -1303,7 +1303,7 @@
     "scripts/audit_gru.py": "c50b6baee7cd6ebd6ae870c0df9b7d0e93c996605c011de064554a39dc62127e",
     "scripts/bin_recording.py": "515838047c844befbf4fa7f2213a610c1fca01f7dcdbb269c747f3f3035fdb89",
     "scripts/evaluate_baselines.py": "2e92954c953b46d259bb313cc53910275330ab13cbd38c14df4e9b1371237349",
-    "scripts/evaluate_final.py": "3baae9fdc072a7bc2c0a54cfb598ccb330620f20ee6f94918ef2ee1bb27d5088",
+    "scripts/evaluate_final.py": "bcd83243753708010c2a3a0102fc85eee78acae2006643d3a452675dc9db7632",
     "scripts/render_cursor_replay.py": "3549c41adf284b9b07f08e9e45e5117a45cee860667c3a0d277f0e17734c15fd",
     "scripts/replay_validation.py": "9068518f88980748a86b6da346a3cee183b741c435c01fe9a2276685d88d0052",
     "src/neurodecode/__init__.py": "d117a2466939b25f9b8aa4627e98782a3b76c6ae63583a98feefbdd44530ca78",
@@ -1342,5 +1342,12 @@
     "ffmpeg": "ffmpeg version N-122609-g364d5dda91-20260131 Copyright (c) 2000-2026 the FFmpeg developers",
     "ffprobe": "ffprobe version N-122609-g364d5dda91-20260131 Copyright (c) 2007-2026 the FFmpeg developers"
   },
-  "success_rule": "all integrity/independent checks and fixed figures/video pass; otherwise stop and preserve failure; do not drop models or select another clip"
+  "success_rule": "all integrity/independent checks and fixed figures/video pass; otherwise stop and preserve failure; do not drop models or select another clip",
+  "integrity_repair": {
+    "parent_freeze_sha256": "e69c7f3181c479fdf0df076d256e7beb1cc7197c758deee7e8fab805c23832fc",
+    "parent_freeze_commit": "e64dc2a545f3f1c26afa4459386aa2a13c58377f",
+    "blocker_report": "reports/phase7b_final.md",
+    "reason": "Read Git blobs as bytes; strict UTF-8 decode and CRLF/CR to LF, matching existing local source identity. No scientific rule changed.",
+    "committed_code_semantics": "SHA-256(UTF-8(strict UTF-8 decode(Git HEAD blob), newlines CRLF/CR normalized to LF)); no locale decoding, ignored characters or BOM stripping"
+  }
 }

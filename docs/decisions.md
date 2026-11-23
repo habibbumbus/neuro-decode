@@ -284,3 +284,21 @@ command, inference, figures or metrics were produced. A separate reviewed repair
 and regression test must revise the bound freeze and validation evidence before
 a renewed test request. Original freeze and rehearsal remain unchanged. There
 are no Phase 7B scores or completed final evaluation to claim.
+
+## 2026-11-23 — Repair byte decoding while preserving committed identity
+
+Capture Git blobs as bytes, strictly decode UTF-8, normalize CRLF/lone CR to LF
+and hash UTF-8, matching original local source identity. Apply the shared reader
+to freeze JSON and every declared source; retain exact HEAD/evidence checks.
+Do not force an encoding environment, ignore characters, skip a source or accept
+local-only equality. Real changed content and malformed UTF-8 still fail.
+
+Explicitly revise the freeze to
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`,
+binding the repaired evaluate_final.py and new validation run identity
+phase7a-utf8-gate-validation. Parent Phase 7A and blocker histories/evidence remain
+preserved. No scientific rule or model/artifact changes. Original historical HEAD
+passes the repaired gate; the new uncommitted freeze is correctly rejected.
+Seven regression cases catch non-ASCII cp1252 failure and genuine alteration.
+See [repair report](../reports/phase7b_gate_repair.md). Stop before test access;
+review and commit this repair separately before a new test-opening request.

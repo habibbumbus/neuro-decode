@@ -1587,3 +1587,29 @@ changed. The frozen fail-closed rule was followed; no test results exist.
 See the [blocker report](../reports/phase7b_final.md). A reviewed provenance-gate
 repair requires an updated bound freeze and validation evidence before opening
 test. This methods note records a failure, not a protocol amendment.
+
+### Explicit UTF-8 gate repair before test
+
+Git `show HEAD:<path>` is now captured as bytes, strict UTF-8 decoded, newline
+normalized from CRLF/CR to LF and re-encoded as UTF-8 for SHA-256. This matches
+the originally specified local UTF-8/universal-newline hash. No BOM/whitespace
+stripping, Unicode normalization or replacement/ignored bytes. Bad encoding or
+Git failure stops execution. This applies to the freeze JSON and all 29 source
+identities, not only the first failing file. Every declared identity still must
+match committed HEAD; exact freeze/evidence gates remain intact.
+
+The [explicit freeze amendment](final_evaluation.md) binds the repaired runner
+and new validation evidence ID, digest
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`.
+No scientific preprocessing, model, population, metric/tolerance, reset, interval
+or export rule changed. The [repair report](../reports/phase7b_gate_repair.md)
+records old/new hashes, accepted historical HEAD, rejected altered content,
+regression tests and validation-only checks. A revised uncommitted freeze remains
+rejected; user review/commit and a later test-opening instruction are required.
+
+Revised validation rehearsal and artifact-only independent audit passed on the
+same 2,775 rows. Predictions and metric CSVs are byte-identical to original
+Phase 7A; no numerical inference or scoring behavior changed. All 353 tests and
+repository checks passed. Validation video/probe and decoded first/middle/last
+frames also passed inspection. Both original and revised evidence remain under
+ignored runs/; no test-mode invocation or test examples/predictions/metrics.

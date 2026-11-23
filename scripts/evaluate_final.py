@@ -123,27 +123,39 @@ def preflight(freeze):
     return models, mean_model
 
 
-def require_committed_freeze(freeze):
+def read_committed_utf8(relative):
+    """Read HEAD's bytes, decode strict UTF-8, normalize CRLF/CR to LF.
+
+    This matches Path.read_text(encoding="utf-8") used by local preflight.
+    Never use locale-dependent subprocess text decoding for a frozen identity.
+    Preserve all other characters, including any BOM; invalid UTF-8 fails closed.
+    """
     prefix = ["git", "-c", f"safe.directory={Path.cwd().as_posix()}"]
-    committed = subprocess.run(
-        prefix + ["show", f"HEAD:{FREEZE_PATH.as_posix()}"],
+    raw = subprocess.run(
+        prefix + ["show", f"HEAD:{relative}"],
         capture_output=True,
-        text=True,
         check=True,
     ).stdout
-    if canonical_sha(json.loads(committed)) != canonical_sha(freeze):
-        raise ValueError("Current freeze is not committed exactly at HEAD")
+    return (
+        raw.decode("utf-8", errors="strict").replace("\r\n", "\n").replace("\r", "\n")
+    )
+
+
+def verify_committed_implementation(freeze):
+    """Compare every declared HEAD source identity, never just working files."""
     for relative, expected in freeze["implementation_sha256_utf8_lf"].items():
-        committed_code = subprocess.run(
-            prefix + ["show", f"HEAD:{relative}"],
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout
-        if hashlib.sha256(committed_code.encode()).hexdigest() != expected:
+        committed_code = read_committed_utf8(relative)
+        if hashlib.sha256(committed_code.encode("utf-8")).hexdigest() != expected:
             raise ValueError(
                 f"Frozen implementation is not committed at HEAD: {relative}"
             )
+
+
+def require_committed_freeze(freeze):
+    committed = read_committed_utf8(FREEZE_PATH.as_posix())
+    if canonical_sha(json.loads(committed)) != canonical_sha(freeze):
+        raise ValueError("Current freeze is not committed exactly at HEAD")
+    verify_committed_implementation(freeze)
     evidence = Path("runs") / freeze["validation_run_id"]
     run = json.loads((evidence / "run.json").read_text(encoding="utf-8"))
     verification = json.loads(

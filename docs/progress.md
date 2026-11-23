@@ -2911,3 +2911,63 @@ offline lock consistency and locked environment checks passed. No dependency
 changes. The existing tests do not catch this actual Windows subprocess-decoding
 failure, so they do not supersede the failed pre-access gate. No new regression
 test was added because this checkpoint stops before an implementation repair.
+
+## Pre-test repair — explicit UTF-8 committed-code gate (2026-11-23)
+
+Started on main at committed blocker record
+`c7638acd31d182aefff9888de13e04ac0bf5a586`. Tracked files/index were clean;
+unrelated untracked `%SystemDrive%/` is preserved. Read CODEX.md, committed freeze,
+blocker and relevant records. No applicable AGENTS.md. No history rewrite or
+agent staging/commit/push. The original Phase 7A/blocker commits and all original
+ignored evidence remain intact. See [repair report](../reports/phase7b_gate_repair.md)
+and the [freeze amendment](final_evaluation.md).
+
+Repaired Git source reading with binary stdout, strict UTF-8 decode, CRLF/CR to
+LF, then UTF-8 SHA-256. This preserves original local identity semantics and
+still compares every declared file against HEAD. The same reader handles the
+freeze JSON. Invalid UTF-8/Git failures and actual changed content fail closed;
+no ignored/replaced characters or local-only substitute. All 29 original HEAD
+identities and original validation evidence now pass the repaired full gate.
+Simulated old cp1252 decoding also affects evaluate_final.py, evaluation.py and
+plotting.py, beyond the originally reported evaluate_baselines.py. All are
+covered by the shared reader. Original validation artifact audit passes.
+
+Explicit revised freeze SHA-256:
+`61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28`.
+Only bound scripts/evaluate_final.py identity changed; remaining JSON changes are
+phase/repair provenance and new validation ID phase7a-utf8-gate-validation.
+All scientific settings, frozen model/source/split/scaler/environment identities,
+rows/metrics/tolerances and preselected test clip remain unchanged. New local
+preflight passed without source loading. The revised full gate correctly rejects
+the current uncommitted freeze; after the user's commit it must pass on revised
+HEAD and new validation evidence before any later test opening.
+
+Seven new non-ASCII/byte regression cases passed; focused suite 21 passed.
+Full suite 353 passed in 30.89 seconds. Ruff lint/format, offline lock/environment
+checks passed, no dependency changes. Tests cover old cp1252 failure explicitly,
+LF/CRLF/CR equivalence, genuine tampering, invalid UTF-8, Git failure and frozen
+JSON equality. No test-mode invocation, test examples, predictions or metrics.
+Validation-only rehearsal/evidence is recorded below.
+
+Learning: an integrity check must compare the intended bytes/text identity;
+locale decoding can change authentic content before hashing. Matching the
+working tree alone is insufficient: committed source, exact freeze and audited
+validation evidence remain required. Repair teach-back pending. Stop before test;
+review/commit is the user's next action, not authorization to open test.
+
+Completed runs/phase7a-utf8-gate-validation/ and its independent artifact audit:
+all 2,775 original validation rows, 100% common eligible coverage, original nine
+warm-up exclusions, all five models. predictions.csv, metrics.csv and metrics.md
+are byte-identical to original Phase 7A; full metrics equal exactly. Overall RMSE
+[mm/s] remains zero 72.817486, mean 72.817654, ridge 52.571380, Kalman 102.838507,
+GRU 54.791919. Replay/offline max differences remain ridge 3.126388e-13 mm/s,
+all others zero. No weight/scaler change. Independent metric calculations,
+identities/support/provenance and saved hashes all pass. New run.json SHA-256:
+`8adb942e7f0d6a00884bf0029b8b2dce636ba2cf3e04744b283a885bd65377cf`.
+Validation MP4 passed 500-frame/50-fps/10-second/1600×900 checks; encoded
+first/middle/last frames inspected with consistent labels, axes, timing and
+honest drift. No test directory exists. Original failure/rehearsal evidence is
+preserved. Only validation windows were constructed; the existing global source
+loader caveat remains. No unresolved implementation blocker; the intentional
+remaining gate is user review/commit of the revised freeze, followed by a
+read-only committed-gate check and a separate test-opening instruction.
