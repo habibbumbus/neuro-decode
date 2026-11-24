@@ -128,13 +128,15 @@ Outputs: timestamped five-model predictions, metrics/exclusions, frozen protocol
 
 The full local MP4 is `runs/phase7b-final-test/cursor_replay.mp4` after restoring the evidence bundle: **500 frames, 50 fps, 10 seconds**. It is intentionally absent from Git. The [preview provenance and demo guide](docs/demo.md#held-out-preview-and-video-phase-7b7c) identifies its exact source/hash. Playback speed is separate from acquisition bin duration and measured inference processing time.
 
+For a short presentation using the existing media, follow the [suggested 85-second interview walkthrough](docs/demo.md#suggested-85-second-interview-walkthrough). It is a narration plan, not a new export or experiment.
+
 ## Architecture and evidence map
 
 | Path | Responsibility |
 | --- | --- |
 | `src/neurodecode/data/` | Recording loader, causal bins/targets, chronological split and training-only scaler/history contracts |
-| `src/neurodecode/models/`, `training.py` | Baselines, ridge, Kalman, GRU and bounded training mechanics |
-| `src/neurodecode/evaluation.py`, `streaming.py`, `demo.py` | Common metrics/identities, sequential replay/resets and velocity integration |
+| `src/neurodecode/models/`, `src/neurodecode/training.py` | Baselines, ridge, Kalman, GRU and bounded training mechanics |
+| `src/neurodecode/evaluation.py`, `src/neurodecode/streaming.py`, `src/neurodecode/demo.py` | Common metrics/identities, sequential replay/resets and velocity integration |
 | `scripts/`, `configs/` | Runnable experiment/audit entry points and declared settings; final freeze in `configs/final_evaluation.json` |
 | `tests/` | Synthetic timing, causality, leakage, persistence, replay and metric/provenance checks |
 | `reports/`, `docs/` | [Final results](reports/phase7b_final.md), [replay/latency](reports/phase6a_replay.md), [simulated disruptions](reports/phase6b_robustness.md), [methods](docs/methods.md), [interview notes](docs/interview_notes.md) |
@@ -148,4 +150,4 @@ The full local MP4 is `runs/phase7b-final-test/cursor_replay.mp4` after restorin
 - **No hard real-time guarantee.** [Validation processing latency](reports/phase6a_replay.md) was measured separately; animation playback and a 20 ms acquisition bin do not prove a deadline is always met.
 - **Reproducibility has a boundary.** Public source and raw data support setup/tests and independent rebuilding; exact historical evaluation also needs the unpublished trusted model/evidence bundle and frozen runtime. Code-license selection remains pending.
 
-[Progress](docs/progress.md) · [Decisions](docs/decisions.md) · [Methods](docs/methods.md) · [Back to top](#top)
+[Final audit and open checks](reports/phase7d_audit.md) · [Progress](docs/progress.md) · [Decisions](docs/decisions.md) · [Methods](docs/methods.md) · [Back to top](#top)

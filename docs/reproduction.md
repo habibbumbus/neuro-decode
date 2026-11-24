@@ -40,6 +40,25 @@ uv run --locked --no-sync python -m pytest -p no:cacheprovider
 
 An optional local cache is `uv --cache-dir .uv-cache ...`; no cache contents are committed. No CI workflow is currently provided. Passing local tests is not evidence that a hosted CI run occurred.
 
+### Windows pytest temporary-directory permissions
+
+If test setup raises `PermissionError` while scanning the shared
+`%TEMP%/pytest-of-<user>` directory, this is a temporary-directory access failure,
+not a completed scientific test. Keep the original error record and select a
+**new, absent** directory under ignored `runs/` for the synthetic suite:
+
+```powershell
+if (Test-Path -LiteralPath runs/pytest-review-unique) { throw 'Choose a new absent directory' }
+New-Item -ItemType Directory -Force runs | Out-Null
+uv run --locked python -m pytest -p no:cacheprovider --basetemp=runs/pytest-review-unique
+```
+
+pytest may clear its chosen base directory, so do not point `--basetemp` at
+existing runs, data or the repository root. This changes only fixture storage,
+not models, metrics, the scientific freeze or test-partition evaluation. The
+[Phase 7D audit](../reports/phase7d_audit.md) records the observed default-path
+failure and workspace-temp recheck; no user temp-folder permissions were changed.
+
 ## Public raw input
 
 Download only `indy_20161005_06.mat` from the version-specific [Zenodo v1 file](https://zenodo.org/records/583331/files/indy_20161005_06.mat?download=1), place it at `data/raw/indy_20161005_06.mat`, and verify it against [data/manifest.json](../data/manifest.json). Do not overwrite an existing recording. The SHA-256 must be:

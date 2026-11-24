@@ -354,3 +354,20 @@ blocked by Computer Use's current-URL confidence guard; do not bypass it or
 claim that generated HTML was visually reviewed. User manual preview is the
 remaining presentation check. Stop after Phase 7C documentation handoff; a new
 recording-session experiment remains proposed, not executed or authorized.
+
+## 2026-11-23 — Final audit retains honest open acceptance checks
+
+Verify Phase 7C commit 3343eeb on local/remote main, audit tracked files and
+reachable history, match curated figures to original saved outputs, and recheck
+all public claims against the frozen final report. No scientific rerun or history
+rewrite. Fix only concrete presentation/reproduction issues: complete module
+paths, missing short demo narration and Windows pytest temp-folder setup.
+
+Preserve default-path and first-retry fixture errors; record the final 353-test
+pass with corrected workspace temp storage. Do not conflate these synthetic
+verification runs with another held-out experiment. No permissions or scientific
+code changed. Keep the original scope unmarked while rendered README inspection
+and hosted CI acceptance remain open; do not substitute source/PNG inspection or
+local test passes for those checks. See [final audit](../reports/phase7d_audit.md)
+for handoff, evidence scope and unavailable artifact limitations. Stop for user
+review/commit without starting another scientific increment.

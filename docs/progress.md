@@ -3139,3 +3139,90 @@ runtime/export identities required, no fresh-host/non-Windows reproduction, code
 license undecided. The next single increment is the user's final presentation/
 handoff review, including manual README rendering and focused commit. No new
 scientific experiment is authorized. Stop after Phase 7C; no stage/commit/push.
+
+## Phase 7D — final audit and handoff, sign-off still open (2026-11-23)
+
+### Repository and scientific claims
+
+Read CODEX.md, final report, Phase 7C records, README, interview notes, methods,
+decisions, setup/demo guides and actual file inventory. No applicable AGENTS.md.
+Phase 7C HEAD and fresh GitHub main check agree at
+`3343eebd3788abad4ec35362a98b1f5f6cba66b8`. Tracked tree/index initially clean;
+unrelated untracked `%SystemDrive%/` preserved. No history rewriting or agent
+stage/commit/push. Full evidence and handoff: [Phase 7D audit](../reports/phase7d_audit.md).
+
+Read-only public-tree/reachable-history audit passed: 103 tracked files, 433
+reachable objects, 228 unique blobs; no forbidden private-brief/raw/processed/
+runs/checkpoint/video/key paths, no blob above 5 MB, no high-signal credential
+matches across 213 UTF-8 text blobs. Only manifest/split metadata are tracked
+under data/. This is a scoped scan, not a guarantee against every secret format
+or unreachable/unfetched object. No sensitive values are reproduced.
+
+All nine curated PNGs match original run outputs byte-for-byte and were visually
+checked: four learning curves, validation velocity, three validation disruptions
+and the actual predetermined held-out still. Captions, labels, units, seeds,
+selected epochs and intervals agree with their reports. Conceptual SVG banner
+is labeled as illustration. No new image, altered path or selected clip.
+
+README's complete five-model metric table/units agree with Phase 7B. It correctly
+states invasive intracortical recordings, tracker-derived movement labels and
+offline replay; it does not claim EEG, live cursor control, human/clinical benefit,
+statistical significance or hard real-time performance. Ridge lambda 1000 remains
+best only by the frozen primary velocity RMSE on the common 2,784-row block.
+No model, metric, frozen implementation identity or demo interval changed.
+
+### Walkthrough, concrete fixes and checks
+
+Created a fresh Phase 7C clone under ignored runs/phase7d-final-audit/clone/.
+New locked Python 3.11.17 environment installed 34 packages from cache; isolated
+import points to that clone, without raw data, original model runs or local brief.
+The documented default synthetic test command encountered access denied to the
+shared Windows pytest temp directory: 300 passed, 53 setup errors in 97.69 s.
+The first local-temp workaround also had 53 setup errors because its parent
+runs/ directory was absent (300 passed in 29.62 s). Preserved these outcomes.
+Fixed the guide to create the parent and choose a new absent base directory;
+the corrected complete suite passed **353 tests in 34.04 s**. No user permissions,
+source/tests or pytest configuration changed; this was fixture storage only.
+
+Fixed ambiguous README module paths and added a suggested 85-second demo
+narration using the existing held-out video and clearly separate validation
+channel-loss figure. No presentation export or scientific run. Updated README
+links to the narration/audit. Added this audit report and Windows troubleshooting.
+Lint/format and lock checks passed; local links/anchors and all 29 frozen source
+hashes pass read-only checking. Fresh-clone artifact preflight and restored local
+preflight are checked separately; final statuses are recorded in the audit.
+
+Fresh-clone preflight correctly stops at absent runs/phase3b-ridge/ridge.json,
+before a recording loader. Original-checkout frozen preflight passes. The
+documented artifact-only final audit passes on 2,784 saved rows and unchanged
+original run hash 87c10c06…94bc2; no new inference. Public remote ref inventory
+lists main and docs/project-foundation (both covered by inspected history), no
+tags. All tracked Markdown links/anchors and full README metric rows pass local
+checks; exact counts/evidence are in runs/phase7d-final-audit/ JSON artifacts.
+
+Fresh public inputs support source setup and synthetic verification. Raw data
+must be acquired from the documented public Zenodo v1 record; exact historical
+model/reference/evidence artifacts and MP4 remain an unpublished trusted bundle.
+No real-data fitting, new predictions or held-out experiment was performed.
+The original test run and original evidence were preserved.
+
+### Completion gate, learning and handoff
+
+The original scope is **not marked fully complete**. Rendered-README visual review
+is still unverified: a new read-only inventory confirms no browser access host;
+the earlier URL-confidence guard was not bypassed. All actual PNGs were viewed,
+but that does not certify hosted README layout. Hosted CI remains absent/unrun;
+local test passes are not a CI pass. Exact artifact-release availability, code
+license choice and fresh-host/non-Windows reproduction are disclosed limitations.
+External link checking is partial (uv installation page retrieved; Git/DOI web
+retrieval restricted by the provider rather than proven broken).
+
+The user correctly calculated 10 mm drift from a persistent 2 mm/s error over
+5 s, demonstrating that integration arithmetic. Independent explanations of the
+broader split/leakage and cross-session limits remain a learning checkpoint;
+practice notes do not imply mastery. Three handoff questions are in the audit.
+
+Stop after Phase 7D. Next single increment is final presentation/CI acceptance
+and user handoff review, not another model or test experiment. User reviews the
+exact changed documentation and runs focused Git commands; no automatic next
+phase or scientific tuning is authorized.

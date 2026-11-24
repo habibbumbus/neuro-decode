@@ -134,3 +134,23 @@ command are documented there; don't rerun test or delete outputs to regenerate
 a prettier demo. Playback speed, acquisition-bin duration and measured processing
 latency are different quantities. This is not closed-loop control or a hard
 real-time guarantee.
+
+## Suggested 85-second interview walkthrough
+
+This is a narration/presentation plan using existing verified media, not a new
+85-second export or another experiment. Timing is approximate; practice aloud.
+Keep validation robustness and held-out accuracy visibly distinguished.
+
+| Elapsed | Show | Suggested narration |
+| --- | --- | --- |
+| 0–15 s | README experiment description | “These are implanted motor-cortex spike recordings while a monkey reaches. The tracked hand controlled the original cursor; that movement supplies our labels. We decode the recording afterward.” |
+| 15–30 s | Causal pipeline and split | “Completed count bins feed a training-fitted scaler and frozen decoders. Ridge and GRU use bounded history. We selected settings on validation before freezing test artifacts, scoring rows and this clip.” |
+| 30–40 s | Play the existing ten-second held-out MP4 once | “This is offline replay. The reference integrates tracker-derived target velocity. Every path has one common anchor; no later position corrections hide drift.” |
+| 40–55 s | Full held-out result table | “Ridge has the lowest declared overall velocity RMSE: about 60.42 mm/s, versus GRU 67.36. Kalman is worse than the trivial baselines. A locally closer path does not replace that full-block metric.” |
+| 55–70 s | Existing [validation channel-loss trace](../reports/figures/phase6b_channel_loss_trace.png) and [robustness report](../reports/phase6b_robustness.md) | “This separate validation-only simulation disables a predefined physical-channel subset. It tests sensitivity under a documented policy, not actual biological electrode instability or test robustness.” |
+| 70–85 s | Limitations and reproduction boundary | “These are correlated examples from one session and one held-out time block. We have no cross-session, human or live-control evidence. Source and tests are public; exact historical model artifacts and the full video are not currently a public download.” |
+
+Use the fixed existing clip/trace rather than selecting a new favorable interval.
+Do not relabel the validation disruption plot as held-out test evidence. The
+public still is available without the ignored bundle; playing the full MP4
+requires the existing trusted local evidence as described above.
