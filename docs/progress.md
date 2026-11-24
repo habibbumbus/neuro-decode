@@ -3055,3 +3055,87 @@ execution/audit blocker. Stop for user review, teach-back and focused results
 commit. No next experiment is authorized. Teach-back on transfer limits remains
 pending; do not infer mastery. Nothing staged, committed or pushed by the agent;
 CODEX.md, raw data, checkpoints and bulk generated media remain outside Git.
+
+## Phase 7C — presentation and reproducibility handoff (2026-11-23)
+
+### Starting evidence and implemented documentation
+
+Read CODEX.md, final report, progress/methods/decisions and existing README/setup/
+demo/data records. No applicable AGENTS.md. HEAD and a fresh GitHub main lookup
+both matched Phase 7B results commit
+`aaf1f8251d1ff98bbf698d66618575c5943d0df4`. Tracked tree/index started clean;
+unrelated untracked `%SystemDrive%/` is preserved. No agent stage/commit/push.
+
+Updated README in the requested order: actual reaching experiment and tracker
+labels, intracortical versus EEG, causal pipeline, split/validation/freeze/common
+rows/warm-up, complete held-out metrics, setup/reproduction, actual-run demo,
+file map and limitations. Replaced stale unopened-test/unfinished-replay claims.
+Ridge lambda 1000 is best by frozen overall velocity RMSE; poor Kalman/GRU
+comparisons remain visible. Positive velocity R² is not position tracking.
+
+Rewrote docs/reproduction.md to distinguish public setup, independent validation
+rebuilding, original frozen-bundle restoration and saved-artifact-only review.
+Corrected the GRU run identity to phase5b-gru-round1 and documented that the legacy
+`--features` command constructs aggregate histories/targets for all partitions;
+it was not executed here. New training artifacts need not match original byte
+hashes; no freeze bypass is proposed. The exact trusted artifact bundle and
+large MP4 are not currently published as a release. Public raw input is on the
+recorded Zenodo v1 URL, with manifest verification. No code license invented.
+
+Added docs/interview_notes.md: suggested 60-second explanation, five technical
+questions/answers, observed-versus-hypothesized ridge/GRU/Kalman explanations,
+leakage controls and a proposed separate-session generalization experiment.
+Updated demo guide and dataset-card introduction to distinguish dated records
+from completed work. Preserved scientific reports and frozen implementation.
+
+README preview docs/assets/phase7b-replay-still.png is an unchanged copy of
+the actual Phase 7B predetermined frame-250 still, 139,724 bytes. SHA-256
+`4c017df3e63b1ae99b398f87174e1f51ec65a84926d3c404d1c5ab0907a9a1bb`
+matches the original run manifest and frame_middle.png. Inspected the image;
+fixed axes, offline/test/reference labels, original interval and drift remain.
+Companion JSON records source/run/freeze identity and no transformation. No
+MP4, checkpoint, recording or bulk output is intended for Git.
+
+### Fresh-clone walkthrough and checks
+
+Created a local fresh clone of committed Phase 7B under ignored
+runs/phase7c-doc-walkthrough/clone/. It has no raw recording, original model runs
+or private local brief. New environment installation first failed offline because
+CPU PyTorch was not cached; a normal locked network installation populated the
+separate clone environment. Isolated import confirms clone-local Python/package
+paths and frozen NumPy/PyTorch versions. Locked environment check passed with
+34 packages/no changes; all 353 synthetic tests passed in 52.35 seconds.
+
+Clone preflight stopped as expected at absent runs/phase3b-ridge/ridge.json,
+before recording loading/test inference. This documents an actual reproducibility
+boundary rather than claiming fresh-clone historical evaluation works without
+ignored artifacts. No dataset downloaded, model refit, new prediction or test
+experiment. Existing scientific weights/configs and all 29 frozen implementation
+hashes remain unchanged.
+
+README metric table was checked against all five final-report rows; local links/
+anchors and preview provenance checks pass, with saved document_checks.json under
+ignored walkthrough outputs. Main lint/format, offline lock/environment and Git
+whitespace checks pass. No project dependency or source changes.
+
+Rendered-README visual QA is **blocked**, not passed. Native preview could not be
+activated reliably; browser access was unavailable, then Computer Use stopped
+because it could not verify the current Windows browser URL with sufficient
+confidence to enforce policy. No UI bypass was attempted. A local HTML preview
+of the used Markdown subset was generated, but it was not visually certified.
+The actual PNG still was separately viewed successfully. External links were
+not all HTTP-rechecked. These limits are explicit in the reproduction guide.
+
+### Understanding, remaining review and stop
+
+Cross-session interpretation was corrected: another block of the original
+session is still within-session evidence; a separate recording is needed for a
+cross-session claim. Independent teach-back remains pending. Interview answers
+are practice material, not fabricated evidence of mastery or biological proof.
+
+Documentation is implemented with rendered-README inspection outstanding.
+Other limits: original artifact bundle/MP4 not publicly released, exact frozen
+runtime/export identities required, no fresh-host/non-Windows reproduction, code
+license undecided. The next single increment is the user's final presentation/
+handoff review, including manual README rendering and focused commit. No new
+scientific experiment is authorized. Stop after Phase 7C; no stage/commit/push.

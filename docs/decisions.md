@@ -329,3 +329,28 @@ under ignored runs/. The test block is now opened and cannot be reused as an
 untouched final estimate after test-informed changes. One recording/block does
 not establish transfer to another session, clinical benefit or live brain
 control. Stop after Phase 7B for the user's review/learning/Git checkpoint.
+
+## 2026-11-23 — Present measured results and disclose reproducibility limits
+
+Confirm Phase 7B commit aaf1f82 is on HEAD and GitHub main; preserve unrelated
+work. Present the complete held-out table and name ridge lambda 1000 best only
+by frozen overall velocity RMSE. Keep poor Kalman and GRU results and explain
+that integrated position can drift. Do not retrain, change the freeze or run
+test again to produce presentation material.
+
+Use the actual preselected middle still, copied byte-for-byte with provenance,
+as the small README preview. Keep the full MP4 and original raw/model/evidence
+runs ignored. Distinguish publicly reproducible setup and independent validation
+rebuilds from exact historical restoration: the original trusted bundle has no
+public release, and freshly serialized runs need not match frozen hashes.
+Document paths, source URL, safe read-only audit commands and actual clean-clone
+successes/failures. Keep code-license choice pending rather than inventing one.
+
+Fresh clone/new Windows environment: 353 tests passed, clone-local import and
+locked installed environment verified; preflight expectedly fails at missing
+ridge artifact. All frozen implementation identities remain unchanged. The
+actual still passes visual/hash inspection. Rendered-README QA is explicitly
+blocked by Computer Use's current-URL confidence guard; do not bypass it or
+claim that generated HTML was visually reviewed. User manual preview is the
+remaining presentation check. Stop after Phase 7C documentation handoff; a new
+recording-session experiment remains proposed, not executed or authorized.

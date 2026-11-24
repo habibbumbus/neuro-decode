@@ -4,7 +4,7 @@
 
 Implanted electrodes recorded neural spikes while a monkey physically moved its
 hand in a reaching task. Tracked movement determined cursor position. These are
-intracortical recordings, not EEG. NeuroDecode will estimate cursor velocity
+intracortical recordings, not EEG. NeuroDecode estimates cursor velocity
 from neural recordings afterward; tracker-derived behavior supplies labels.
 
 Selected **indy_20161005_06.mat** from the explicitly requested
@@ -12,7 +12,9 @@ Selected **indy_20161005_06.mat** from the explicitly requested
 May 26, 2017. The record page offers newer versions; this acquisition retained v1.
 The API has no explicit version string, so the v1 label comes from the record page.
 The file has been acquired and its raw schema validated in Phase 1B.
-Downstream modeling suitability remains unverified.
+The original raw-schema audit below is retained as a dated record. Subsequent
+alignment, model comparisons and frozen held-out evaluation are complete; see
+the [final report](../reports/phase7b_final.md) for measured results and limits.
 
 ## Provenance, license, and citation
 

@@ -1645,3 +1645,28 @@ This is one-session/one-time-block offline decoding, not cross-session transfer
 or live closed-loop control. Test has now been used; later test-informed changes
 are exploratory. No repeated scientific run or significance claim. Frozen
 specification and earlier blocker/repair records remain historical evidence.
+
+### Phase 7C: presentation and reproducibility boundary
+
+The README now reports the complete frozen held-out comparison, with velocity
+units and common eligible rows, rather than stale validation-only status. The
+[reproduction guide](reproduction.md) separates public setup/development rebuilds
+from exact historical artifact restoration and read-only saved-result auditing.
+It records the required unpublished trusted bundle, fixed runtime/tool versions,
+protected run directories and the legacy all-partition feature-audit behavior.
+Neither regenerating a model nor changing its hash is a valid substitute for
+the original freeze. No scientific protocol, implementation or weights changed.
+
+The only curated new image is the byte-identical original predetermined middle
+still, with [provenance](assets/phase7b-replay-still.json). The MP4 remains ignored.
+No smoothing, new interval, rescaling of a model path or fresh test inference.
+Reference integration and drift caveats accompany the image. Model-failure
+explanations in [interview notes](interview_notes.md) distinguish observations
+from untested hypotheses; no biological or significance conclusion is added.
+
+A fresh local clone/new Windows environment passed isolated import and all 353
+synthetic tests; frozen preflight correctly stopped at missing ridge artifacts.
+The actual still was visually inspected. Rendered-README visual QA remains
+blocked by the Computer Use URL-confidence policy, as recorded in progress and
+the reproduction walkthrough. This handoff is not another test evaluation,
+cross-session experiment or proof of fresh-host exact artifact reproduction.

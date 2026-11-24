@@ -1,408 +1,170 @@
-# Setup and reproduction guide
+# Setup, review and reproduction
 
-[Back to the project overview](../README.md)
+[Project overview](../README.md) · [Frozen specification](final_evaluation.md) · [Final results](../reports/phase7b_final.md)
 
-Detailed environment setup, component audits, and experiment commands. For the
-ordered end-to-end workflow with matching artifact paths, start with the
-[README reproduction sequence](../README.md#reproduce-the-comparison).
+There are three different tasks: install/test the public source; independently rebuild development validation artifacts; or reproduce/audit the exact historical frozen result. The last task needs the original trusted ignored artifacts. New training runs are not substitutes for their hashes. Phase 7C performed no retraining or test inference.
 
 ## Setup
 
-Python 3.11 is the supported compatibility target for this checkpoint;
-compatibility with other Python versions has not been tested. Use uv 0.12.23.
-Runtime dependencies are NumPy/h5py for loading, Matplotlib for figures and
-scikit-learn 1.7 for ridge fitting (including its resolved SciPy requirements).
-PyTorch provides the GRU and its training components. pytest and Ruff provide
-component tests, linting, and formatting.
-
-### What the setup files do
-
-- `pyproject.toml` describes the package, Python compatibility, dependencies,
-  and Hatchling build configuration. It explicitly locates the package under
-  `src/neurodecode/`.
-- `.python-version` selects Python 3.11 for uv. The launcher/system Python used
-  to install uv may be a different version.
-- `uv.lock` records resolved dependency versions and hashes. Keep it in Git
-  and let uv generate changes; do not edit it by hand. Build-backend requirements
-  are declared separately in `pyproject.toml` and may require a download.
-- `.venv/` is the local Python environment. Keep it out of Git and recreate it
-  from the project configuration and lockfile on another machine.
-- An editable install connects the environment to `src/neurodecode/`, so
-  Python source edits take effect without reinstalling for each edit.
-
-Use `uv sync --locked` to install the locked dependencies and the editable
-package. `--locked` fails if dependency metadata needs a lockfile update instead
-of silently changing it. `uv run --locked` selects the project environment, so
-manual environment activation and `sys.path` edits are unnecessary. See
-[uv's locking and syncing documentation](https://docs.astral.sh/uv/concepts/projects/sync/).
-
-Run the following from the repository root after cloning.
-
-### Windows PowerShell
-
-Check for the uv executable first:
-
-```powershell
-uv --version
-```
-
-If uv is missing, install the pinned version using the Python launcher, then
-restart PowerShell if needed to make `uv` available on PATH:
+Use Python 3.11.17 for the recorded environment. The walkthrough used uv 0.12.23. Install uv using its [official installation instructions](https://docs.astral.sh/uv/getting-started/installation/); on Windows with the Python launcher, the equivalent pinned installation is:
 
 ```powershell
 py -m pip install --user uv==0.12.23
 ```
 
-Use the executable directly. Availability of `uv` does not guarantee that
-`py -m uv` works under every account or launcher-selected Python.
-
-```powershell
-uv python install 3.11
-uv sync --locked
-uv run --locked python --version
-uv run --locked python -I -c "import sys, neurodecode; print(sys.executable); print(neurodecode.__file__)"
-```
-
-The interpreter path should be under `.venv\Scripts\`, and the package path
-should point to `src\neurodecode\__init__.py` in this checkout. Configure your
-editor to use `.venv\Scripts\python.exe` as well.
-
-### macOS / Linux
-
-Install uv 0.12.23 using the [official installer](https://docs.astral.sh/uv/getting-started/installation/).
-These platform instructions have not been executed in this checkout.
-
-```bash
-curl -LsSf https://astral.sh/uv/0.12.23/install.sh | sh
-uv python install 3.11
-uv sync --locked
-uv run --locked python --version
-uv run --locked python -I -c "import sys, neurodecode; print(sys.executable); print(neurodecode.__file__)"
-```
-
-Use `.venv/bin/python` as the editor interpreter on these platforms.
-
-### Development checks
-
-Run from the repository root in PowerShell or a POSIX shell:
+From a new clone, these commands are shared by PowerShell and POSIX shells:
 
 ```text
-uv lock --check
-uv sync --locked
+git clone https://github.com/habibbumbus/neuro-decode.git
+cd neuro-decode
+uv python install 3.11.17
+uv sync --locked --python 3.11.17
+uv run --locked python -I -c "import sys, neurodecode; print(sys.executable); print(neurodecode.__file__)"
+uv run --locked python -m pytest -p no:cacheprovider
 uv run --locked ruff check .
 uv run --locked ruff format --check .
-uv run --locked pytest tests/test_package.py
+uv lock --check
 ```
 
-The lock check verifies that dependency metadata agrees with `uv.lock`; sync
-installs the selected environment. Ruff checks the rules in `pyproject.toml`
-for Python 3.11, including common errors, unused imports, and import order.
-The format command checks formatting without rewriting files. Neither Ruff
-command proves runtime or scientific correctness. See
-[Ruff configuration](https://docs.astral.sh/ruff/configuration/) for rule settings.
+`--locked` preserves the committed resolution; it does not remove the need to download missing packages or build requirements. `--offline` requires a populated cache. The package import must point to this clone's `src/neurodecode/`, not another checkout. The lock selects CPU PyTorch on Windows/Linux; macOS uses PyPI. Only the Windows walkthrough below was executed. Cross-platform setup is a proposed recipe, not a verified byte-identical scientific reproduction.
 
-The existing installation smoke test imports NeuroDecode from a temporary
-directory using an isolated Python process. It checks installed package discovery
-outside the checkout, not decoding accuracy. No additional placeholder tests
-are needed. CI remains deferred until meaningful component behavior exists.
+`pyproject.toml` declares dependencies and the editable package, `.python-version` gives the supported Python line, and `uv.lock` fixes resolved packages. Environments/caches are ignored. Activation is optional when using `uv run`; editor interpreters are `.venv/Scripts/python.exe` on Windows and `.venv/bin/python` on POSIX.
 
-For a restricted runtime with cache-write permission problems, after a successful
-sync use these equivalent checks without cache writes or environment syncing:
+After a successful sync, cache-restricted read-only checks can use:
 
 ```text
 uv run --locked --no-sync ruff check --no-cache .
 uv run --locked --no-sync ruff format --check --no-cache .
-uv run --locked --no-sync pytest -p no:cacheprovider tests/test_package.py
+uv run --locked --no-sync python -m pytest -p no:cacheprovider
 ```
 
-`--no-sync` assumes the environment has already been installed; it is not a
-replacement for the setup step. Phase 0C ran these checks successfully. See
-[progress](progress.md) for commands, outcomes, and limits.
+An optional local cache is `uv --cache-dir .uv-cache ...`; no cache contents are committed. No CI workflow is currently provided. Passing local tests is not evidence that a hosted CI run occurred.
 
-### Verify setup in a temporary environment (Windows PowerShell)
+## Public raw input
 
-This optional check uses the existing project Python to install the same locked
-dependencies into a new temporary environment, preserving `.venv`. It then
-imports the editable package from a directory outside the checkout. Setting
-`UV_PROJECT_ENVIRONMENT` chooses the temporary environment; see
-[uv project environment configuration](https://docs.astral.sh/uv/concepts/projects/config/#project-environment-path).
-Run from the repository root after normal setup:
+Download only `indy_20161005_06.mat` from the version-specific [Zenodo v1 file](https://zenodo.org/records/583331/files/indy_20161005_06.mat?download=1), place it at `data/raw/indy_20161005_06.mat`, and verify it against [data/manifest.json](../data/manifest.json). Do not overwrite an existing recording. The SHA-256 must be:
 
-```powershell
-$previousEnvironment = $env:UV_PROJECT_ENVIRONMENT
-$setupCheck = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
-$projectPython = (Resolve-Path .venv\Scripts\python.exe).Path
-New-Item -ItemType Directory -Path $setupCheck | Out-Null
-try {
-    $env:UV_PROJECT_ENVIRONMENT = Join-Path $setupCheck 'venv'
-    uv sync --locked --python $projectPython
-    if ($LASTEXITCODE -ne 0) { throw 'Temporary installation failed' }
-    $checkPython = Join-Path $env:UV_PROJECT_ENVIRONMENT 'Scripts\python.exe'
-    Push-Location $setupCheck
-    try {
-        & $checkPython -I -c "import sys, neurodecode; print(sys.executable); print(neurodecode.__file__)"
-        if ($LASTEXITCODE -ne 0) { throw 'Outside-checkout import failed' }
-    } finally {
-        Pop-Location
-    }
-} finally {
-    $env:UV_PROJECT_ENVIRONMENT = $previousEnvironment
-}
+```text
+4b023e668d641960c7e3f4d277c781e606013125013a4cead1f4731951ff8eac
 ```
 
-The interpreter path should be in the temporary environment; the module path
-should point to this checkout's `src/neurodecode/__init__.py`. The temporary
-directory is left available for inspection. This verifies a new environment
-on the same Windows machine, not a clean clone, another OS, or a fully offline
-installation from an empty cache.
+PowerShell: `Get-FileHash -Algorithm SHA256 data/raw/indy_20161005_06.mat`.
+POSIX: `sha256sum data/raw/indy_20161005_06.mat` (or `shasum -a 256` on macOS).
+The [dataset card](dataset.md) gives byte size, source attribution, CC BY 4.0 license and source-field/physical-unit caveats. The dataset is public, not an access-controlled clinical recording. The repository's code license is still undecided.
 
-For an optional repository-local uv cache, use
-`uv --cache-dir .uv-cache sync --locked` (or the corresponding uv subcommand).
-That directory is ignored. Network access is needed for missing Python
-versions, dependencies, or build requirements. `--offline` works only when the
-required artifacts are already available locally.
+## Rebuild validation artifacts
 
-Raw/processed recordings, environments, caches, and generated runs remain
-untracked. Small provenance files and curated results can be tracked. Dataset
-source/version, attribution, license, and verified hashes are documented in the
-[dataset card](dataset.md) and [manifest](../data/manifest.json). Internal schema,
-units, timing, coverage differences, and unresolved alignment details are
-documented in the dataset card. Chronological partitions and timing are specified in
-[methods](methods.md). Causal counts and aligned velocity labels are
-implemented alongside causal histories and training-only normalization. Validation
-baseline evaluation and ridge fitting/selection are implemented, together with
-training-only Kalman parameter diagnostics and causal validation filtering.
-GRU components pass synthetic checks, and real training/validation experiments
-are complete for the declared Phase 5B round. Final test evaluation stays closed.
-A license for this project's code has not been chosen.
+This is the historical development recipe for a separate reproduction, **not executed in Phase 7C**. It fits models and requires verified raw data. Use a separate checkout with absent output directories; keep the shown names because later scripts use them. Preserve existing runs. These commands do not predict or score test, but the legacy `--features` audit constructs aggregate histories/targets for all partitions, including test. It is not a validation-only pre-access command.
 
----
-
-# Component and experiment reference
-
-## Load the acquired recording
-
-After setup and [verified acquisition](dataset.md), run:
-
-```powershell
+```text
 uv run --locked python scripts/inspect_recording.py data/raw/indy_20161005_06.mat
-```
-
-The summary reports original movement samples, channel/unit spike events, timing,
-empty trains, and coverage differences. The loader preserves raw events and does
-not bin spikes, derive velocity, or prepare evaluation splits. Tests generate
-small synthetic HDF5 fixtures; real recordings remain outside tests and Git.
-
-## Plot an early recorded interval
-
-```powershell
-uv run --locked python scripts/plot_recording.py phase1c-review
-```
-
-This generates a spike raster, cursor positions versus time, and an x-y trajectory
-from a fixed early ten-second interval. Output PNG/JSON files stay under ignored
-`runs/phase1c-review/`. Choose a new folder name for another run; existing outputs
-are preserved. No predictions or signal shifts are used. See the
-[dataset card](dataset.md) for selection rules, gap policy, and limitations.
-
-## Plan chronological partitions
-
-```powershell
-uv run --locked python scripts/plan_splits.py
-```
-
-The command verifies recording bytes and saves a small reproducible specification
-under data/splits/. See [methods](methods.md) for the 20 ms timing contract,
-70/15/15 elapsed-time split, purge gaps, warm-up, and endpoint rules. It uses
-timestamp/coverage metadata, not held-out movement patterns. Exact eligible
-feature indices are not generated by this planning command; the later count,
-target and feature commands below construct eligible rows.
-
-## Bin training spike events
-
-~~~powershell
-uv run --locked python scripts/bin_recording.py
-~~~
-
-The command verifies source/configuration/split identity, constructs complete
-20 ms bins inside retained training segments, and prints shape, conservation,
-and a fixed early example. Counts aggregate all source unit slots into each
-ordered M1 channel. Arrays remain in memory; no processed cache is saved or
-reused. See [methods](methods.md) for exact edges, gap and aggregation rules.
-The no-flag command constructs counts only. Use the feature audit below for
-histories and normalization; model commands are documented later in this guide.
-
-## Audit aligned cursor velocity
-
-~~~powershell
-uv run --locked python scripts/bin_recording.py --targets
-~~~
-
-This reuses the verified recording/split contract and prints valid target counts
-and rejection reasons per partition, with position/velocity examples from fixed
-early training rows only. Targets use past-or-present positions divided by their
-actual elapsed seconds; this explicitly supersedes the earlier fixed 20 ms
-denominator proposal. Original count rows and bin IDs remain intact, with one
-shared validity mask for paired counts/labels. Arrays remain in memory. See
-[methods](methods.md) for sampling limits, warm-up and rejection rules.
-
-## Build causal histories and training-only transforms
-
-~~~powershell
 uv run --locked python scripts/bin_recording.py --features
-~~~
-
-This reuses the count and target implementations, checks original bin identities,
-and builds oldest-to-newest ten-bin histories independently inside each partition
-and continuous segment. Raw counts stay available separately. Training X is
-[13070, 10, 96], y is [13070, 2] mm/s, and reversible flattening gives [13070, 960].
-A zero count is valid; missing or quality-invalid bins break a history.
-
-Per-channel means/population standard deviations are fitted over unique valid
-training bins once, including warm-up source bins. Frozen statistics transform
-all partitions; validation/test cannot update them. Constant training channels
-use scale 1 and retain their identities. Targets remain in mm/s.
-
-The command prints aggregate held-out eligibility/shapes and three fixed early
-training examples. It saves only small scaler metadata under ignored
-runs/phase2d/count_scaler.json; no bulk arrays are persisted or reused. Identical
-reruns are allowed; different existing metadata are preserved with a clear error.
-See [methods](methods.md) for eligibility, formulas, metadata and the
-distinction between offline training fit and causal use of a frozen scaler.
-
-Run all component checks:
-
-~~~powershell
-uv run --locked pytest
-uv run --locked ruff check .
-uv run --locked ruff format --check .
-~~~
-
-## Evaluate trivial velocity baselines on validation
-
-~~~powershell
-uv run --locked python scripts/evaluate_baselines.py phase3a-review
-~~~
-
-Use a new run directory name; existing runs are preserved. This reuses the
-Phase 2D examples, freezes a training-only mean velocity, generates both
-predictions without validation labels as inputs, then scores all 2775 eligible
-validation rows. The test partition is not predicted, plotted or scored.
-
-Ignored run outputs contain effective configuration/provenance, metrics,
-timestamped predictions and a fixed first-ten-second validation velocity plot.
-These are constant baselines, not neural decoders. Overall validation RMSE is
-about 72.82 mm/s for both; full axis scores, provenance and limitations are in
-the [validation report](../reports/phase3a_baselines.md). No final test claim follows.
-
-## Fit and select ridge regression on validation
-
-~~~powershell
-uv sync --locked
+uv run --locked python scripts/evaluate_baselines.py phase3a-baselines
 uv run --locked python scripts/train_ridge.py phase3b-ridge
-~~~
-
-Use a new run directory name. The command reuses existing preparation, frozen
-training-only normalization, oldest-first [10,96] → [960] flattening and shared
-scoring. It fits six predeclared lambda candidates only on training, selecting
-the smallest overall validation RMSE with the documented tie-break.
-No test targets/windows, predictions or scores are produced.
-
-Selected lambda=1000 achieves overall validation RMSE 52.571 mm/s and mean
-R² 0.480, versus 72.817 mm/s and near-zero R² for trivial baselines on the same
-2775 examples. These are development validation results, not final test scores.
-See the [ridge report](../reports/phase3b_ridge.md) for all candidates, axis metrics,
-provenance, the first prediction and limitations.
-
-Ignored run outputs include explicit JSON model parameters/frozen transform,
-effective configuration and identities, timestamped predictions, scores and
-the same fixed first-ten-second validation plot. Save/load prediction equality
-is checked. Existing runs are preserved.
-
-## Fit Kalman parameters on training data
-
-~~~powershell
 uv run --locked python scripts/fit_kalman.py phase4a-kalman-fit
-~~~
-
-Use a new run name. This reuses verified preparation and the frozen training
-transform, fitting two-dimensional velocity dynamics and a current-bin
-96-channel neural observation model. Only valid consecutive training pairs
-within a session/segment contribute transitions. No filtering or Kalman
-validation/test predictions are produced.
-
-The verified fit uses 13070 observation/state rows and 13069 transitions.
-All matrices are finite; Q and the training initial covariance need no jitter.
-Diagonal R retains all channels and floors 11 constant-channel variances at
-1e-8. Its condition number is about 1e8; Phase 4B checks numerical filtering
-below. See the [parameter diagnostics](../reports/phase4a_kalman_fit.md)
-and [methods](methods.md) for the assumptions and precise rules.
-
-Ignored run outputs contain fitted matrices, the training-derived prior and
-reset policy, configuration/identities, covariance diagnostics and provenance.
-The evaluation command below reuses these frozen parameters.
-
-## Evaluate the frozen Kalman filter
-
-~~~powershell
 uv run --locked python scripts/evaluate_kalman.py phase4b-kalman-audited
-~~~
+uv run --locked python scripts/train_gru.py phase5b-gru-round1
+uv run --locked python scripts/audit_gru.py phase5b-gru-round1
+uv run --locked python scripts/replay_validation.py phase6a-validation-timing
+uv run --locked python scripts/audit_replay.py phase6a-validation-timing
+```
 
-This loads the existing Phase 4A Kalman and selected Phase 3B ridge artifacts,
-uses the same prepared validation rows and training-fitted scaler, and saves
-four-model metrics, predictions, reset/covariance diagnostics and a fixed ten-second
-plot under ignored runs/phase4b-kalman-audited/. A new run ID preserves earlier output.
-Default fitted runs are runs/phase4a-kalman-fit and runs/phase3b-ridge; optional
---kalman-run and --ridge-run arguments select equivalent saved local runs.
-If these artifacts are absent in a new checkout, run the documented training
-commands first. No held-out labels enter the filter, and test scoring stays closed.
-See [methods](methods.md) for reset/warm-up and missing-bin policies.
+Use the committed split; `scripts/plan_splits.py` is the historical planner, not a required step to overwrite it. `bin_recording.py --features` generates `runs/phase2d/count_scaler.json`. Baseline evaluation supplies the training mean. Ridge fits/selects its declared validation grid; Kalman fits training parameters then evaluates on the same validation rows. The GRU script uses `configs/gru_experiment.toml` and produces the selected representative plus the declared validation-only seed repeats. Replay uses that exact run directory and audits its inputs.
 
-The real-data GRU command below requires the fixed reference directories
-`runs/phase3b-ridge/` and `runs/phase4b-kalman-audited/`, as produced by these
-examples. Keep those names when preparing its inputs.
+These scripts produce fresh JSON/checkpoints/predictions with their own timestamps, code/environment/provenance. Refit results may differ; even numerically equal models need not have identical serialized bytes. **They do not recreate the exact hash-frozen artifact bundle automatically.** Do not update the freeze hashes just to make a rebuilt artifact pass. [Phase 5B](../reports/phase5b_gru.md), [Phase 6A](../reports/phase6a_replay.md) and the [methods](methods.md) document component scientific contracts and limitations. Processing latency is machine-specific.
 
+## Restore the exact frozen bundle
 
-## Verify GRU components with synthetic data only
+No downloadable release of the original models/evidence is currently published. Obtain the original trusted files from the project author/original checkout, preserve their relative paths, and verify them against `configs/final_evaluation.json` and the saved run manifests. A fresh clone alone is insufficient; arbitrary external PyTorch checkpoints are not trusted inputs.
 
-~~~powershell
-uv sync --locked
-uv run --locked python scripts/check_gru.py phase5a-review
-uv run --locked pytest tests/test_gru.py
-~~~
+| Restore under repository root | Required content/use |
+| --- | --- |
+| `runs/phase3a-baselines/` | Original `run.json` with frozen training mean and identity |
+| `runs/phase3b-ridge/` | Original `ridge.json`, lambda 1000, frozen scaler/context |
+| `runs/phase4a-kalman-fit/` | Original `kalman_parameters.json`, dynamics/observation matrices and training prior |
+| `runs/phase5b-gru-round1/` | Original representative seed-2026 checkpoint and five-model `predictions.csv`; restore the whole folder for its component audits |
+| `runs/phase6a-validation-timing/` | Original sequential validation `predictions.csv` and evidence |
+| `runs/phase7a-utf8-gate-validation/` | Revised passing rehearsal `run.json`, `verification.json` and every artifact listed in its manifest |
+| `runs/phase7b-final-test/` | Already-completed final predictions, metrics, protocol, manifests, video and verification for read-only review |
 
-The locked setup installs CPU PyTorch on Windows/Linux; macOS uses PyPI.
-The implemented model is one unidirectional GRU with 32 hidden values and a
-linear two-velocity head (12546 parameters for 96 channels). Each independent
-10-bin window starts from zero hidden state; later replay must use this same rule.
-The training components provide MSE, Adam, gradient clipping and best-validation
-snapshot selection. The command exercises them on a tiny synthetic mapping,
-without loading the recording. Synthetic memorization is not scientific accuracy.
-Checkpoint and verification metadata stay under ignored runs/phase5a-review/;
-use a new run ID to preserve earlier outputs. See [methods](methods.md).
-The synthetic memorization result establishes mechanics only. Real-recording
-Phase 5B results and their separate predeclared plan are described below.
+The raw recording is needed for new inference but not artifact-only auditing. All model/reference hashes, Python/package versions and the specific FFmpeg/ffprobe build are part of the freeze. Python 3.11 compatibility alone is insufficient for exact preflight. Source/config identities remain bound to the committed implementation; documentation-only commits do not alter those 29 files.
 
-## Train and validate the GRU on the recording
+### Safe checks with restored evidence
 
-~~~powershell
-uv run --locked python scripts/train_gru.py phase5b-review
-uv run --locked python scripts/audit_gru.py phase5b-review
-~~~
+Local preflight verifies implementation/config/model/environment identities without loading the recording:
 
-Use a new run ID. Requires the existing verified recording, Phase 2D scaler,
-selected Phase 3B ridge and Phase 4B audited reference predictions under runs/.
-The fixed round in configs/gru_experiment.toml compares learning rates 0.001
-and 0.003 at seed 2026, then repeats only the selected setting at seeds 2027/2028.
-Maximum four fits / 200 epochs / 20 minutes checked between epochs. Architecture,
-batch size, normalization, target units, clipping and patience retain Phase 5A
-defaults. Training/validation metrics by epoch, all seed predictions/checkpoints
-and complete provenance remain ignored under runs/. The artifact-only audit
-recomputes CSV metrics and checks saved hashes/selection/output bounds.
+```text
+uv run --locked python scripts/evaluate_final.py preflight
+```
 
-All models score the identical 2,775 eligible validation rows and fixed first
-ten-second trace. No test examples or scores are constructed. See the
-[complete plan/results](../reports/phase5b_gru.md) for selection, every seed,
-learning curves, generalization gap and missed-peak diagnosis. Offline versus
-sequential replay agreement and processing latency are the next increment.
+Verify the committed freeze, all 29 declared HEAD file identities and passing validation evidence, also without loading the recording:
 
+```text
+uv run --locked python -c "import sys,json; sys.path.insert(0,'scripts'); from evaluate_final import read_committed_utf8,require_committed_freeze; require_committed_freeze(json.loads(read_committed_utf8('configs/final_evaluation.json'))); print('committed freeze and validation evidence passed')"
+```
+
+Read-only re-audit of restored validation and final evidence:
+
+```text
+uv run --locked python -c "import sys; from pathlib import Path; sys.path.insert(0,'scripts'); from audit_final import audit; print(audit(Path('runs/phase7a-utf8-gate-validation'))); print(audit(Path('runs/phase7b-final-test')))"
+```
+
+This verifies hashes, source/timestamp/partition support and independently recomputes all metrics from saved CSV. It makes no model predictions. The CLI auditor writes a new verification file exclusively, so use the read-only function for an existing run.
+
+### Generate an absent validation rehearsal from exact inputs
+
+Only when the exact frozen model/reference bundle is restored, export tools match, raw data is verified, and the fixed validation output directory does not already exist:
+
+```text
+uv run --locked python scripts/evaluate_final.py validation --run-id phase7a-utf8-gate-validation
+uv run --locked python scripts/audit_final.py phase7a-utf8-gate-validation
+```
+
+This prepares validation only, checks established Phase 5B/6A predictions, and produces the prescribed validation exports/evidence. The source loader reads the acquired recording/global metadata; no test examples or test inference are constructed by this mode. Existing directories are protected, not disposable caches.
+
+### Historical final-evaluation command
+
+The following was already executed once for the reported result. It is included for archival reproduction in a separate environment with the original inputs, not a recommendation to run another test experiment or delete existing evidence. No test inference was run in Phase 7C.
+
+```text
+uv run --locked python scripts/evaluate_final.py test --run-id phase7b-final-test --open-test-sha256 61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28
+uv run --locked python scripts/audit_final.py phase7b-final-test
+```
+
+The test gate requires committed exact identities and an audited matching validation rehearsal. Outputs include timestamped predictions, metrics/exclusions, frozen protocol, opening event, code/source/model identities and the fixed figures/video/still. Failures stop evaluation; no model dropping, refitting, score-informed exclusions or replacement clip. The [final report](../reports/phase7b_final.md) records the command-output logs and all measured results. The original test block is now used; future test-informed changes need an explicitly exploratory label and new untouched data for another final claim.
+
+## Phase 7C documentation walkthrough
+
+A local fresh clone of committed Phase 7B (`aaf1f8251d1ff98bbf698d66618575c5943d0df4`) was created under ignored `runs/phase7c-doc-walkthrough/clone/`, without raw data, original `runs/`, checkpoints or private local notes. The rewritten documentation/preview is reviewed separately before commit.
+
+| Walkthrough check | Observed outcome |
+| --- | --- |
+| Local clone of committed source | Passed; no raw file, original model/evidence runs or local-only brief |
+| New Python 3.11.17 environment, offline sync | Initially blocked: CPU PyTorch wheel absent from cache |
+| Locked installation with network access | Packages installed in the separate clone environment; no changes to the original environment |
+| Isolated import outside implicit source paths | Passed; interpreter and NeuroDecode package both resolve to the clone; NumPy 2.4.6 / torch 2.14.1+cpu |
+| Locked installed-environment check | Passed, 34 packages checked, no changes required |
+| Full synthetic tests in fresh clone | 353 passed in 52.35 seconds, no recording/models required |
+| Final-evaluation `preflight` in clone | Expected failure at absent `runs/phase3b-ridge/ridge.json`; no recording loader or test inference |
+| Local documentation links/anchors, result table, preview hash | Passed; evidence is `runs/phase7c-doc-walkthrough/document_checks.json` |
+| Rendered README visual inspection | Blocked: Computer Use could not confidently verify the current Windows browser URL; a local HTML preview was generated but not visually certified |
+| Actual-run demo still inspection | Passed visually; copied without transformation and hash matched to saved Phase 7B manifest |
+
+Commands executed for the clean-clone checks (from the original root for cloning, then from the clone):
+
+```powershell
+git -c safe.directory=C:/Users/disar/projects/neuro-decode clone --no-hardlinks --local C:/Users/disar/projects/neuro-decode runs/phase7c-doc-walkthrough/clone
+```
+
+```text
+uv sync --locked --offline --python C:/Users/disar/AppData/Roaming/uv/python/cpython-3.11-windows-x86_64-none/python.exe
+uv sync --locked --python C:/Users/disar/AppData/Roaming/uv/python/cpython-3.11-windows-x86_64-none/python.exe
+.venv/Scripts/python.exe -I -c "import sys,neurodecode,torch,numpy; print(sys.executable); print(neurodecode.__file__); print(torch.__version__,numpy.__version__)"
+uv --cache-dir C:/Users/disar/projects/neuro-decode/.uv-cache sync --locked --offline --check
+.venv/Scripts/python.exe -m pytest -p no:cacheprovider --tb=short
+.venv/Scripts/python.exe scripts/evaluate_final.py preflight
+```
+
+The absolute Python/cache paths above record this machine's actual walkthrough, not portable setup requirements; use the version-based setup commands at the top for a new machine. The native/browser preview tool was stopped by its URL-confidence policy; no alternate UI route was used afterward. HTML generation alone is not a passed rendered-README inspection. External documentation/download URLs were retained from authoritative existing records but were not all HTTP-rechecked in this pass. A manual rendered-README review remains outstanding.
+
+The walkthrough is a Windows check on this machine. It is not a fresh-host or macOS/Linux verification, and it does not download the dataset, restore private/local artifacts, retrain or execute test. A successful setup cannot erase the unpublished-artifact dependency of the exact scientific result.

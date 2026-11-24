@@ -1,0 +1,18 @@
+{
+  "source_run": "runs/phase7b-final-test",
+  "source_artifact": "still.png",
+  "preview": "docs/assets/phase7b-replay-still.png",
+  "sha256": "4c017df3e63b1ae99b398f87174e1f51ec65a84926d3c404d1c5ab0907a9a1bb",
+  "size_bytes": 139724,
+  "source_run_json_sha256": "87c10c06a2635a3b506b693cf2d024c3cd39ecadf971a521ecea32f803c94bc2",
+  "freeze_sha256": "61941d4f1ed6226b2af3a80c5a79c0c88f5f374186ff5f6be047ce75094e6f28",
+  "frame_index": 250,
+  "bin_end_s": 1611.32,
+  "clip_interval_s": [
+    1606.32,
+    1616.32
+  ],
+  "transform": "none; byte-for-byte copy of verified predetermined middle render",
+  "caption": "Offline replay of recorded intracortical activity; tracker-derived reference velocity integration; common axes and uncorrected drift",
+  "phase7c_new_test_inference": false
+}

@@ -1,5 +1,8 @@
 # Validation cursor replay — Phase 6C
 
+This first section is the preserved validation-development record. The current
+held-out preview/video is documented in [the Phase 7B/7C section below](#held-out-preview-and-video-phase-7b7c).
+
 This is a ten-second **offline replay of recorded intracortical activity**, not
 live brain control. It uses the fixed first validation interval
 [1550.200,1560.200) s from earlier figures, without selecting a favorable clip.
@@ -86,3 +89,48 @@ All 332 tests passed, including 13 new integration/alignment/gap checks.
 Independent artifact audit verifies hashes, anchor equality and every exported
 displacement against saved velocities (maximum residual 2.842171e-14 mm).
 FFprobe verifies frame count, dimensions, rate and duration. No final-test score.
+
+## Held-out preview and video (Phase 7B/7C)
+
+The completed frozen held-out video is
+`runs/phase7b-final-test/cursor_replay.mp4`, preserved under ignored runs/.
+It uses the timestamp-only interval **[1606.320,1616.320) s** selected before
+test access, not a replacement clip chosen for appearance. No video or test
+inference was rerun for Phase 7C; only an existing small still was copied.
+
+![Verified predetermined middle still from the frozen held-out replay](assets/phase7b-replay-still.png)
+
+The README preview is a byte-for-byte copy of the original run's `still.png`,
+also identical to its `frame_middle.png`: frame 250, elapsed 5.000 s, bin end
+1611.320 s. It was visually inspected and checked against the run's saved artifact
+hash. File size 139,724 bytes; SHA-256
+`4c017df3e63b1ae99b398f87174e1f51ec65a84926d3c404d1c5ab0907a9a1bb`.
+The [small provenance JSON](assets/phase7b-replay-still.json) records source/run/
+freeze identities and the absence of image transforms. This is the actual
+predetermined rendered still, not an AI illustration or a new selected example.
+
+The ten-second MP4 has 500 frames at 50 fps and 1600×900 dimensions. Its label
+says **offline replay of recorded intracortical activity**, frozen held-out test,
+not live brain control. Reference, ridge, seed-2026 GRU and Kalman share fixed
+physical axes and a single relative zero anchor at 1606.300 s. Position increments
+are predicted velocity times actual neural-bin duration, with no smoothing,
+shifting, snapping, periodic reset or future reference correction. Kalman's
+large drift remains visible, so the other trajectories appear small on the
+common scale. Do not crop/rescale individual models to improve the comparison.
+
+The reference is **tracker-derived reference velocity integration**, not the
+original sampled tracker-position path. The existing alignment audit found
+40/500 behavioral intervals differ from neural-bin durations; exact tracker-grid
+alignment is not established. Positive velocity R² does not prove position
+accuracy, and local endpoint closeness cannot replace the full-block RMSE.
+The [final report](../reports/phase7b_final.md) retains every model's complete
+scores and the actual encoded first/middle/last-frame inspection evidence.
+
+To review the full local video, restore the original trusted evidence folder
+as described in [reproduction](reproduction.md#restore-the-exact-frozen-bundle).
+No public MP4/artifact release currently exists. Never force-add the MP4 or bulk
+runs. Read-only artifact auditing and the recorded archival export/evaluation
+command are documented there; don't rerun test or delete outputs to regenerate
+a prettier demo. Playback speed, acquisition-bin duration and measured processing
+latency are different quantities. This is not closed-loop control or a hard
+real-time guarantee.
