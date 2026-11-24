@@ -3226,3 +3226,21 @@ Stop after Phase 7D. Next single increment is final presentation/CI acceptance
 and user handoff review, not another model or test experiment. User reviews the
 exact changed documentation and runs focused Git commands; no automatic next
 phase or scientific tuning is authorized.
+
+## README editorial refresh after Phase 7D
+
+Shortened the front page from 1,777 to 803 words. Lead with the experiment and
+offline scope, summarize the causal pipeline/design decisions, use a compact
+five-model results table, and provide direct setup/data/reproduction steps.
+Full per-axis metrics, protocol details and archival commands remain linked in
+the existing reports/guides. All reported summary values are correctly rounded
+from Phase 7B; poor model results and reproducibility limits remain visible.
+
+Replaced the busy banner with a shorter navy SVG containing only the centered
+NeuroDecode title; removed signal drawings, subtitles and badges. Validated XML
+and the single visible text element. Browser rendering was not certified.
+Checked 115 local links/anchors, all five rounded metric rows and all 29 frozen
+implementation hashes. No scientific code/configuration, model or experiment
+changed. No new tests were needed for this documentation/vector edit. Unrelated
+local work preserved; nothing staged, committed or pushed. Existing final
+presentation/CI acceptance status is unchanged.
