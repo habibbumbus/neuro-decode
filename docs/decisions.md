@@ -328,7 +328,7 @@ actual encoded first/middle/last frames. Media, predictions and command logs sta
 under ignored runs/. The test block is now opened and cannot be reused as an
 untouched final estimate after test-informed changes. One recording/block does
 not establish transfer to another session, clinical benefit or live brain
-control. Stop after Phase 7B for the user's review/learning/Git checkpoint.
+control. Phase 7B retains the single frozen test evaluation and its audit trail.
 
 ## 2026-11-23 — Present measured results and disclose reproducibility limits
 

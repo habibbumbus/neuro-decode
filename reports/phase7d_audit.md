@@ -122,9 +122,8 @@ dataset was downloaded, models refitted or test predictions generated here.
 
 - README file map now uses complete src/neurodecode/ paths for training,
   streaming and integration modules.
-- Demo guide now includes a suggested 85-second narration using the existing
-  ten-second held-out video, original validation channel-loss figure, final
-  metric table and limitations. It is a presentation plan, not a new export.
+- Demo documentation uses the existing held-out video and clearly separates
+  validation disruption figures from test results; no new export is implied.
 - Reproduction guide documents the Windows temp-directory failure and creates
   the parent before using a new ignored pytest base directory.
 
@@ -146,7 +145,7 @@ Provider/cache restrictions are not evidence that those URLs are broken; no
 valid source URL was rewritten based on such an error. No hosted CI run is
 claimed; no workflow currently exists. Code-license choice remains pending.
 
-## Concise handoff
+## Project summary
 
 The system estimates x/y hand-linked cursor velocity from recorded implanted
 spike events, with causal count/history contracts, frozen decoders, matched
@@ -160,20 +159,10 @@ R² has no units; its positive value does not remove accumulated position drift
 or prove generalization across recording sessions.
 
 Start with [README](../README.md), [final report](phase7b_final.md),
-[reproduction](../docs/reproduction.md), [demo/narration](../docs/demo.md) and
-[interview notes](../docs/interview_notes.md). The public still is in
+[reproduction](../docs/reproduction.md) and [demo documentation](../docs/demo.md).
+The public still is in
 docs/assets/phase7b-replay-still.png; the full local MP4 is
 runs/phase7b-final-test/cursor_replay.mp4 when the original evidence is restored.
 
-Three questions to answer without notes:
-
-1. What exactly is available to each model at one completed bin, and which
-   leakage paths do the chronological split and frozen scaler prevent?
-2. Why can positive velocity R² coexist with position drift, and why does a
-   locally closer replay path not replace full-block velocity RMSE?
-3. What would you predeclare and hold out to test transfer to another session,
-   rather than another block of this recording?
-
-Stop for user review/final sign-off and focused Git practice. Do not mark the
-original scope complete until outstanding presentation/CI acceptance checks are
-resolved. No further scientific experiment is authorized by this handoff.
+Final sign-off remains open until the outstanding presentation/CI checks are
+resolved. No further scientific experiment is implied by this audit.

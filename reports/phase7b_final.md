@@ -203,8 +203,8 @@ one-block result cannot establish cross-session/participant transfer, human or
 clinical usefulness, live closed-loop control or a hard real-time guarantee.
 Overlapping 200 ms windows and correlated time bins are not independent trials;
 no significance/confidence interval is claimed. Tracker-derived finite-difference
-labels and quality flags also limit interpretation. Stop after Phase 7B for the
-user's report/learning/Git checkpoint; no automatic next experiment.
+labels and quality flags also limit interpretation. Phase 7B contains the single
+frozen evaluation described above; no additional experiment is implied.
 
 ## Historical pre-access blocker (preserved)
 

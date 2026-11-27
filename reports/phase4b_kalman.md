@@ -130,7 +130,7 @@ Focused tests cover hand-computed updates, a synthetic dynamical system,
 nonsquare H, uncertainty reduction, finite symmetric covariance, prediction-only
 missingness arithmetic, gap/session/segment/partition resets, future-observation
 causality, label-free prepared-window inference, strict identities and persistence.
-See [progress](../docs/progress.md) for actual command outcomes.
+The verification outcomes and commands are recorded in this report.
 No test partition targets/windows, predictions, plots or scores were generated;
 the common loader still reads source/global metadata as previously documented.
 No GRU, replay, trajectory integration, robustness sweep or latency benchmark.

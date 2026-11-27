@@ -1660,13 +1660,13 @@ the original freeze. No scientific protocol, implementation or weights changed.
 The only curated new image is the byte-identical original predetermined middle
 still, with [provenance](assets/phase7b-replay-still.json). The MP4 remains ignored.
 No smoothing, new interval, rescaling of a model path or fresh test inference.
-Reference integration and drift caveats accompany the image. Model-failure
-explanations in [interview notes](interview_notes.md) distinguish observations
-from untested hypotheses; no biological or significance conclusion is added.
+Reference integration and drift caveats accompany the image. The
+[final report](../reports/phase7b_final.md) distinguishes observed model errors
+from untested explanations; no biological or significance conclusion is added.
 
 A fresh local clone/new Windows environment passed isolated import and all 353
 synthetic tests; frozen preflight correctly stopped at missing ridge artifacts.
 The actual still was visually inspected. Rendered-README visual QA remains
-blocked by the Computer Use URL-confidence policy, as recorded in progress and
-the reproduction walkthrough. This handoff is not another test evaluation,
+blocked by the Computer Use URL-confidence policy, as recorded in
+the reproduction walkthrough. This check is not another test evaluation,
 cross-session experiment or proof of fresh-host exact artifact reproduction.

@@ -32,3 +32,6 @@ htmlcov/
 *.onnx
 *.pkl
 *.joblib
+
+# Personal study notes and session records
+/local_notes/

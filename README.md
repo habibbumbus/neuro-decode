@@ -90,7 +90,7 @@ The full local video is `runs/phase7b-final-test/cursor_replay.mp4` after restor
 | [src/neurodecode/](src/neurodecode/) | Data contracts, models, training, metrics and replay |
 | [scripts/](scripts/) · [configs/](configs/) | Experiment commands, audits and frozen settings |
 | [tests/](tests/) | Synthetic timing, causality, leakage and numerical checks |
-| [reports/](reports/) · [docs/](docs/) | Measured results, methods, reproduction and [interview notes](docs/interview_notes.md) |
+| [reports/](reports/) · [docs/](docs/) | Measured results, methods and reproduction instructions |
 
 ## Scope and limitations
 
@@ -98,4 +98,4 @@ One session and one held-out time block do not establish cross-session transfer,
 
 **Data:** O'Doherty et al. (2017), [Nonhuman Primate Reaching with Multichannel Sensorimotor Cortex Electrophysiology, v1](https://doi.org/10.5281/zenodo.583331), CC BY 4.0. A code license has not yet been chosen.
 
-[Final audit and open checks](reports/phase7d_audit.md) · [Project progress](docs/progress.md) · [Design decisions](docs/decisions.md)
+[Final audit and open checks](reports/phase7d_audit.md) · [Design decisions](docs/decisions.md)
